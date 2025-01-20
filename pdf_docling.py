@@ -17,8 +17,8 @@ def convert_pdf_with_docling(source_pdf_path, output_file_path):
     
     return plain_text
 
-# if __name__ == "__main__":
-#     source = "./2105.04895v1.pdf"
-#     output = "docling_conversion_results.json"
-#     text_result = convert_pdf_with_docling(source, output)
-#     print(text_result)
+if __name__ == "__main__":
+    source = "./example.pdf"
+    output = "docling_conversion_results.json"
+    text_result = convert_pdf_with_docling(source, output)
+    print(text_result)
