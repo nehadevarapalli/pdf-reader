@@ -55,7 +55,7 @@ python parser.py
 **Findings:**
 The table extraction functionality in the tool does not currently work as expected. Instead of extracting tables in their structured format (with rows and columns), the tables are being returned as plain text. 
 
----
+
 
 ## Accuracy Assessment
 
