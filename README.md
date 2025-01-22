@@ -27,13 +27,13 @@ To use the tool, we recommend Visual Studio Code for its great support for Pytho
 
 Ensure you have all required Python libraries installed. The easiest way is to use a `requirements.txt` file, which contains the necessary libraries for the project.
 
-1. **Install dependencies** using pip:
+**Install dependencies** using pip:
 
-    Open the integrated terminal in VSCode and run the following command:
+Open the integrated terminal in VSCode and run the following command:
 
-    ```bash
-    pip install -r requirements.txt
-    ```
+```bash
+pip install -r requirements.txt
+```
 
 ### Step 3: Running the Script (`parser.py`)
 
@@ -44,29 +44,22 @@ To run the script, execute the following command in your VSCode terminal:
 python parser.py
 ```
 
+**Results:**
 
 - **Text Extracted**: The total number of characters extracted from the PDF's text.
 - **Tables Extracted**: The total number of tables found in the PDF.
 - **Found Images**: The total number of images extracted.
 - **Potential Charts**: The total number of images that could be charts (this is a heuristic detection).
+- **Visualizations**: If any charts are identified, they are visualized and displayed as images using `matplotlib`. This is helpful when the PDF contains graphs or data visualizations that need to be analyzed.
 
-### Visualizations
-If any charts are identified, they are visualized and displayed as images using `matplotlib`. This is helpful when the PDF contains graphs or data visualizations that need to be analyzed.
+**Findings:**
+The table extraction functionality in the tool does not currently work as expected. Instead of extracting tables in their structured format (with rows and columns), the tables are being returned as plain text. 
 
 ---
 
 ## Accuracy Assessment
 
 The accuracy of the tool depends on the quality and structure of the PDF. The text extraction is quite reliable in most PDFs, but complex layouts, scanned images, or embedded fonts may reduce its accuracy.
-
-### Image and Chart Detection
-- The chart detection is based on a heuristic approach where all images are considered potential charts.
-- This approach may generate false positives (non-chart images identified as charts) or false negatives (charts not recognized).
-
-To improve the accuracy, additional logic can be implemented to differentiate between types of images (e.g., detecting image dimensions, format, and color schemes typical of charts).
-
-### Tables
-- The table extraction is based on `pdfplumber`'s table extraction methods, which work well for PDFs with structured tables. However, complex tables or unstructured layouts might require further refinement in the extraction process.
 
 ---
 
