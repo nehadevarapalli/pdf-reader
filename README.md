@@ -61,7 +61,7 @@ The table extraction functionality in the tool does not currently work as expect
 
 The accuracy of the tool depends on the quality and structure of the PDF. The text extraction is quite reliable in most PDFs, but complex layouts, scanned images, or embedded fonts may reduce its accuracy.
 
----
+
 
 ## Processing Time
 
@@ -79,7 +79,7 @@ This indicates that the processing was quite fast (around 4.5 seconds for a PDF 
 - **Image Complexity**: Extracting high-quality images may take additional processing time.
 - **Table Structure**: Complex or poorly structured tables might increase extraction time.
 
----
+
 
 ## Conclusion
 
