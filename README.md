@@ -45,3 +45,51 @@ python parser.py
 ```
 
 
+- **Text Extracted**: The total number of characters extracted from the PDF's text.
+- **Tables Extracted**: The total number of tables found in the PDF.
+- **Found Images**: The total number of images extracted.
+- **Potential Charts**: The total number of images that could be charts (this is a heuristic detection).
+
+### Visualizations
+If any charts are identified, they are visualized and displayed as images using `matplotlib`. This is helpful when the PDF contains graphs or data visualizations that need to be analyzed.
+
+---
+
+## Accuracy Assessment
+
+The accuracy of the tool depends on the quality and structure of the PDF. The text extraction is quite reliable in most PDFs, but complex layouts, scanned images, or embedded fonts may reduce its accuracy.
+
+### Image and Chart Detection
+- The chart detection is based on a heuristic approach where all images are considered potential charts.
+- This approach may generate false positives (non-chart images identified as charts) or false negatives (charts not recognized).
+
+To improve the accuracy, additional logic can be implemented to differentiate between types of images (e.g., detecting image dimensions, format, and color schemes typical of charts).
+
+### Tables
+- The table extraction is based on `pdfplumber`'s table extraction methods, which work well for PDFs with structured tables. However, complex tables or unstructured layouts might require further refinement in the extraction process.
+
+---
+
+## Processing Time
+
+The time taken for processing will depend on the size and complexity of the PDF. For example, with a PDF containing 75 images and 47,000 characters of text, the processing time was as follows:
+
+- CPU times: user 4.5 s
+- sys: 21.4 ms
+- total: 4.52 s 
+- Wall time: 4.61 s
+
+This indicates that the processing was quite fast (around 4.5 seconds for a PDF of this size).
+
+### Factors Affecting Processing Time
+- **PDF Size**: Larger PDFs with more pages, images, or tables will take longer.
+- **Image Complexity**: Extracting high-quality images may take additional processing time.
+- **Table Structure**: Complex or poorly structured tables might increase extraction time.
+
+---
+
+## Conclusion
+
+This tool provides a comprehensive and fast way to extract and visualize content from PDFs, including text, tables, images, and charts. It is useful for a variety of applications such as data extraction, document analysis, and report generation.
+
+
