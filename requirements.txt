@@ -4,3 +4,5 @@ matplotlib==3.10.0
 pdfplumber==0.11.5
 Pillow
 Requests
+frontend
+pymupdf
