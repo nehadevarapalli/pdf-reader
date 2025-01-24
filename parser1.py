@@ -77,7 +77,7 @@ def process_pdf(file_path):
     
     #visualize_charts(charts)
 
-pdf_file_path = "/path/example.pdf"
+pdf_file_path = "./example.pdf"
 process_pdf(pdf_file_path)
 
 '''
