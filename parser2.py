@@ -1,6 +1,7 @@
 import logging
 import os
 from datetime import datetime
+from dotenv import load_dotenv
 
 from adobe.pdfservices.operation.auth.service_principal_credentials import ServicePrincipalCredentials
 from adobe.pdfservices.operation.exception.exceptions import ServiceApiException, ServiceUsageException, SdkException
@@ -32,6 +33,7 @@ class ExtractTextTableInfoWithFiguresTablesRenditionsFromPDF:
             input_stream = file.read()
             file.close()
 
+            load_dotenv()
             # Initial setup, create credentials instance
             credentials = ServicePrincipalCredentials(
                 client_id=os.getenv('PDF_SERVICES_CLIENT_ID'),
