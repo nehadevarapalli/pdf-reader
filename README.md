@@ -14,7 +14,7 @@ To use the tool, we recommend Visual Studio Code for its great support for Pytho
 
 1. **Clone the repository** (or download the code if you're working with local files):
     ```bash
-    git clone https://github.com/your-repository-path.git
+    git clone https://github.com/nehadevarapalli/pdf-reader.git
     ```
 
 2. **Open the project directory in VSCode**:
