@@ -5,3 +5,5 @@ Pillow
 Requests
 frontend
 pymupdf
+pypdf
+camelot-py

@@ -1,2 +1,5 @@
 venv/
 docling_conversion_results.json
+pypdf_extracted_output.txt
+pypdf_extracted_tables/
+pypdf_extracted_images/
