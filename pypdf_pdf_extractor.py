@@ -2,27 +2,30 @@ import os
 from pypdf import PdfReader
 import camelot
 
-
+# Input PDF file
 pdf_file = './example.pdf'
-output_file = 'pypdf_extracted_output.txt'
+
+# Output files and folders
+output_file = 'pypdf_extracted_output.md' 
 image_folder = "pypdf_extracted_images"
 table_folder = "pypdf_extracted_tables"
+
+# PDF reader object
 reader = PdfReader(pdf_file)
 
-# Extract text from the PDF
-def extract_text_from_pdf(reader, output_file):
+# Extract text from the PDF and save to a Markdown file
+def extract_text_to_markdown(reader, output_file):
     with open(output_file, 'w', encoding='utf-8') as f:
         for page_number, page in enumerate(reader.pages):
             text = page.extract_text()
+            f.write(f'# Page {page_number + 1}\n\n')
             if text:
-                f.write(f'---- Page {page_number + 1} ----\n')
-                f.write(text + '\n')
+                f.write(text + '\n\n')
             else:
-                f.write(f'---- Page {page_number + 1} ----\n')
-                f.write('No text found on this page.\n')   
+                f.write('No text found on this page.\n\n')   
     print(f'Text extraction completed from {pdf_file} and saved to {output_file}')
 
-# Extract images from the PDF
+# Extract images from the PDF and add links to Markdown
 def extract_images_from_pdf(reader, output_file, image_folder):
     os.makedirs(image_folder, exist_ok=True)
     with open(output_file, "a", encoding="utf-8") as f:
@@ -35,12 +38,12 @@ def extract_images_from_pdf(reader, output_file, image_folder):
                     # Save the image to the folder
                     with open(image_path, "wb") as image_file:
                         image_file.write(image_file_object.data)
-
-                    # Log the saved image details in the output file
-                    f.write(f"Saved: {image_path}\n")
+                    
+                    # Add a link to the image in the Markdown file
+                    f.write(f"![Image](./{image_folder}/{image_name})\n\n")                  
     print(f"Image extraction completed. Images saved to '{image_folder}'.")
 
-# Extract tables from the PDF
+# Extract tables from the PDF and add links to Markdown
 def extract_tables_from_pdf(pdf_file, output_file, table_folder):
     os.makedirs(table_folder, exist_ok=True)
     with open(output_file, "a", encoding="utf-8") as f:
@@ -48,11 +51,19 @@ def extract_tables_from_pdf(pdf_file, output_file, table_folder):
             # Extract tables using Camelot
             tables = camelot.read_pdf(pdf_file, pages="all", flavor="lattice") # Try flavor="stream" later
 
-            # Saving each table as a CSV file
+            if len(tables) == 0:
+                f.write("No tables found in the PDF.\n\n")
+                print("No tables found.")
+                return
+            
+            # Saving each table as a CSV file and adding a link in the Markdown file
             for i, table in enumerate(tables):
                 table_name = f"table_{i + 1}.csv"
                 table_path = os.path.join(table_folder, table_name)
                 table.to_csv(table_path)
+
+                # Link
+                f.write(f"[Table {i + 1}](./{table_folder}/{table_name})\n\n")
 
             print(f"Table extraction completed. Tables saved to '{table_folder}'.")
         except Exception as e:
@@ -60,13 +71,13 @@ def extract_tables_from_pdf(pdf_file, output_file, table_folder):
 
 # Main function to perform complete extraction
 def main():
-    # Extract text and save to file
-    extract_text_from_pdf(reader, output_file)
+    # Extract text and save to Markdown file
+    extract_text_to_markdown(reader, output_file)
 
-    # Extract images and save to folder
+    # Extract images and add links to Markdown file
     extract_images_from_pdf(reader, output_file, image_folder)
 
-    # Extract tables and save to folder
+    # Extract tables and add links to Markdown file
     extract_tables_from_pdf(pdf_file, output_file, table_folder)
 
 if __name__ == '__main__':
