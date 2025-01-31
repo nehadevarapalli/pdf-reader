@@ -7,3 +7,7 @@ frontend
 pymupdf
 beautifulsoup4~=4.12.3
 pandas~=2.2.3
+lxml~=5.3.0
+fastapi~=0.115.8
+pathlib~=1.0.1
+markitdown~=0.0.1a3
