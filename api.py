@@ -1,9 +1,8 @@
 import os
 from pathlib import Path
-
 from fastapi import FastAPI, UploadFile, HTTPException, status
 from fastapi.responses import FileResponse
-from pipelines import standardize_docling, standardize_markitdown, html_to_md_docling, get_job_name, output
+from pipelines import standardize_docling, standardize_markitdown, html_to_md_docling, get_job_name, pdf_to_md_docling
 
 app = FastAPI()
 
@@ -18,14 +17,28 @@ async def process_url(url: str):
 
 
 @app.post("/processpdf/", status_code=status.HTTP_200_OK)
-async def process_pdf(url: str):
-    # TODO: Implement this
-    pass
+async def process_pdf(file: UploadFile):
+    contents = await file.read()
+    output = Path("./temp_processing/output/pdf")
+    os.makedirs(output, exist_ok=True)
+    job_name = get_job_name()
+    try:
+        file_path = output / f'{job_name}.pdf'
+        with open(file_path, 'wb') as f:
+            f.write(contents)
+            await file.close()
+        markdown_output = pdf_to_md_docling(file_path, job_name)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        await file.close()
+    return FileResponse(markdown_output, media_type='application/octet-stream', filename=f'{file.filename}.md')
+
 
 @app.post('/standardizedocling/', status_code=status.HTTP_200_OK)
 async def standardizedocling(file: UploadFile):
     contents = await file.read()
-    output = Path("./output/pdf")
+    output = Path("./temp_processing/output/pdf")
     os.makedirs(output, exist_ok=True)
     job_name = get_job_name()
     try:
@@ -55,5 +68,5 @@ async def standardizemarkitdown(file: UploadFile):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     finally:
-        file.file.close()
+        await file.close()
     return FileResponse(standardized_output, media_type='application/octet-stream', filename=f'{file.filename}.md')

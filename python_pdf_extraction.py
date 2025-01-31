@@ -21,11 +21,9 @@ s3_prefix_tables = 'pdfs/python-parser/extracted-tables'
 local_base_dir = Path('./temp_processing') 
 output_dir = local_base_dir / Path('output')
 
-# Docling converter
-converter = DocumentConverter()
-
 # Extract text from the PDF and write to Markdown
 def extract_text_with_docling(pdf_file, markdown_file):
+    converter = DocumentConverter()
     result = converter.convert(pdf_file)
 
     markdown_content = result.document.export_to_markdown()
@@ -59,6 +57,7 @@ def extract_images_to_folder(pdf_file, image_folder):
 
 # Extract tables from the PDF and save them to a folder
 def extract_tables_with_docling(pdf_file, table_folder):
+    converter = DocumentConverter()
     conv_res = converter.convert(pdf_file)
     os.makedirs(table_folder, exist_ok=True)
     doc_filename = conv_res.input.file.stem
