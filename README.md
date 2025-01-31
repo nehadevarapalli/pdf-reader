@@ -1,4 +1,25 @@
 # pdf-reader
+## 🔧 AWS S3 Setup for Team Members
+
+Follow these steps to configure your environment for working with AWS S3:
+
+### 1. Install Dependencies
+```
+pip install boto3 awscli
+```
+
+### 2. AWS Credentials Configuration
+Run this command and enter the credentials provided:
+```
+aws configure
+```
+You'll be prompted for:
+```
+AWS Access Key ID: [YOUR_ACCESS_KEY]
+AWS Secret Access Key: [YOUR_SECRET_KEY]
+Default region name: us-east-2  
+Default output format: [Press enter for None]
+```
 
 # Python PDF Parser
 
