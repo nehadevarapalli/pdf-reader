@@ -12,11 +12,11 @@ class WebScraper:
         self.job_name = job_name
         webpage = self.get_webpage()
         self.soup = BeautifulSoup(webpage, 'lxml')
-        self.output = Path("./output")
+        self.output = Path("./temp_processing/output")
         self.PDF_HOME = self.output / 'pdf'
-        self.CSV_HOME = self.output / 'csv'
+        self.CSV_HOME = self.output / 'extracted_tables'
         self.HTML_HOME = self.output / 'html'
-        self.IMG_HOME = self.output / 'images'
+        self.IMG_HOME = self.output / 'extracted_images'
         os.makedirs(self.output, exist_ok=True)
         os.makedirs(self.PDF_HOME, exist_ok=True)
         os.makedirs(self.CSV_HOME, exist_ok=True)
@@ -29,12 +29,13 @@ class WebScraper:
         Extracts all tables and images from input html
         :return: {image_count: int, table_count: int, home: Path}
         """
-        tables, images = self.soup.find_all('table'), self.soup.find_all('img')
-        self.extract_modify_tables(tables)
-        self.extract_modify_images(images)
         html_path = self.HTML_HOME / f'{self.job_name}.html'
         with open(html_path, 'w') as file:
             file.write(str(self.soup))
+        tables, images = self.soup.find_all('table'), self.soup.find_all('img')
+        self.extract_modify_tables(tables)
+        self.extract_modify_images(images)
+
         return self.file_outputs
 
     def get_webpage(self):

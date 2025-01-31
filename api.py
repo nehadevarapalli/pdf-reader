@@ -2,12 +2,13 @@ import os
 from pathlib import Path
 from fastapi import FastAPI, UploadFile, HTTPException, status
 from fastapi.responses import FileResponse
-from pipelines import standardize_docling, standardize_markitdown, html_to_md_docling, get_job_name, pdf_to_md_docling
+from pipelines import standardize_docling, standardize_markitdown, html_to_md_docling, get_job_name, pdf_to_md_docling, clean_temp_files
 
 app = FastAPI()
 
 @app.post("/processurl/", status_code=status.HTTP_200_OK)
 async def process_url(url: str):
+    clean_temp_files()
     try:
         job_name = get_job_name()
         markdown_output = html_to_md_docling(url, job_name)
@@ -18,6 +19,9 @@ async def process_url(url: str):
 
 @app.post("/processpdf/", status_code=status.HTTP_200_OK)
 async def process_pdf(file: UploadFile):
+    if file.content_type != 'application/pdf':
+        raise HTTPException(status_code=400, detail="File must be a PDF")
+    clean_temp_files()
     contents = await file.read()
     output = Path("./temp_processing/output/pdf")
     os.makedirs(output, exist_ok=True)
@@ -37,6 +41,9 @@ async def process_pdf(file: UploadFile):
 
 @app.post('/standardizedocling/', status_code=status.HTTP_200_OK)
 async def standardizedocling(file: UploadFile):
+    if file.content_type != 'application/pdf':
+        raise HTTPException(status_code=400, detail="File must be a PDF")
+    clean_temp_files()
     contents = await file.read()
     output = Path("./temp_processing/output/pdf")
     os.makedirs(output, exist_ok=True)
@@ -55,6 +62,9 @@ async def standardizedocling(file: UploadFile):
 
 @app.post('/standardizemarkitdown/', status_code=status.HTTP_200_OK)
 async def standardizemarkitdown(file: UploadFile):
+    if file.content_type != 'application/pdf':
+        raise HTTPException(status_code=400, detail="File must be a PDF")
+    clean_temp_files()
     contents = await file.read()
     output = Path("./output/pdf")
     os.makedirs(output, exist_ok=True)
