@@ -1,4 +1,5 @@
 import os
+import shutil
 import fitz
 import pandas as pd
 from pathlib import Path
@@ -90,15 +91,65 @@ def main():
     markdown_s3_key = f'{s3_prefix_text}/{Path(markdown_local_path).name}'
     upload_file_to_s3(str(markdown_local_path), markdown_s3_key, bucket_name=s3_bucket)
 
+    add_tags_to_object(
+        markdown_s3_key,
+        tags={
+            'type': 'text',
+            'format': 'markdown',
+            'extraction_method': 'docling',
+            'source': 'pdf'
+        },
+        bucket_name=s3_bucket
+    )
+
     # Step 3: Extract images and upload the directory to S3
     images_local_folder = output_dir / "extracted_images"
     extract_images_to_folder(local_pdf_path, images_local_folder)
     upload_directory_to_s3(str(images_local_folder), s3_prefix_images, bucket_name=s3_bucket)
+
+    for root, _, files in os.walk(images_local_folder):
+        for file in files:
+            file_path = os.path.join(root, file)
+            relative_path = os.path.relpath(file_path, images_local_folder)
+            image_s3_key = f'{s3_prefix_images}/{relative_path}'
+            add_tags_to_object(
+                image_s3_key,
+                tags={
+                    'type': 'image',
+                    'format': file.split('.')[-1].lower(),
+                    'extraction_method': 'pymupdf',
+                    'source': 'pdf'
+                },
+                bucket_name=s3_bucket
+            )
 
     # Step 4: Extract tables and upload the directory to S3
     tables_local_folder = output_dir / "extracted_tables"
     extract_tables_with_docling(local_pdf_path, tables_local_folder)
     upload_directory_to_s3(str(tables_local_folder), s3_prefix_tables, bucket_name=s3_bucket)
 
+    for root, _, files in os.walk(tables_local_folder):
+        for file in files:
+            file_path = os.path.join(root, file)
+            relative_path = os.path.relpath(file_path, tables_local_folder)
+            table_s3_key = f'{s3_prefix_tables}/{relative_path}'
+            add_tags_to_object(
+                table_s3_key,
+                tags={
+                    'type': 'table',
+                    'format': 'csv',
+                    'extraction_method': 'docling',
+                    'source': 'pdf'
+                },
+                bucket_name=s3_bucket
+            )
+
+    # Step 5: Cleanup
+    if os.path.exists(local_base_dir):
+        shutil.rmtree(local_base_dir)
+        print(f"Deleted temporary directory: {local_base_dir}")
+
+    print("PythonParser PDF Extraction complete.")
+            
 if __name__ == '__main__':
     main()
