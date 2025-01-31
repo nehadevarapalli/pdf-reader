@@ -3,16 +3,25 @@ import fitz
 import pandas as pd
 from pathlib import Path
 from docling.document_converter import DocumentConverter
+from cloud_ops import (
+    download_file_from_s3,
+    upload_file_to_s3,
+    upload_directory_to_s3,
+    add_tags_to_object,
+)
 
-# Input PDF file
-pdf_file = Path("./example.pdf")
+# Input and output configurations
+s3_bucket = 'neu-pdf-webpage-parser'
+s3_input_prefix = 'pdfs/raw'
+s3_prefix_text = 'pdfs/python-parser/extracted-text'
+s3_prefix_images = 'pdfs/python-parser/extracted-images'
+s3_prefix_tables = 'pdfs/python-parser/extracted-tables'
 
-# Output files and folders
-output_dir = Path("./python_pdf_extraction_output")
-markdown_file = output_dir / Path("extracted_output.md")  
-image_folder = output_dir / Path("extracted_images")
-table_folder = output_dir / Path("extracted_tables")
+# Local processing directories (volatile storage)
+local_base_dir = Path('./temp_processing') 
+output_dir = local_base_dir / Path('output')
 
+# Docling converter
 converter = DocumentConverter()
 
 # Extract text from the PDF and write to Markdown
@@ -36,11 +45,11 @@ def extract_images_to_folder(pdf_file, image_folder):
 
         images = page.get_images(full=True)
         for img_index, img in enumerate(images):
-            xref = img[0]  # XREF of the image
+            xref = img[0]  
             base_image = doc.extract_image(xref)
             image_bytes = base_image["image"]
             image_ext = base_image["ext"]  
-            image_name = f'page_{page_number + 1}_image_{img_index + 1}.{image_ext}'
+            image_name = f'{Path(pdf_file).stem}_page_{page_number + 1}_image_{img_index + 1}.{image_ext}'
             image_path = os.path.join(image_folder, image_name)
 
             with open(image_path, 'wb') as image_file:
@@ -65,16 +74,32 @@ def extract_tables_with_docling(pdf_file, table_folder):
 
 # Main function to perform complete extraction
 def main():
+    os.makedirs(local_base_dir, exist_ok=True)
     os.makedirs(output_dir, exist_ok=True)
 
-    # Extract text with Docling
-    extract_text_with_docling(pdf_file, markdown_file)
+    # Step 1: Download input PDF from S3
+    input_pdf_s3_key = f'{s3_input_prefix}/example.pdf'
+    local_pdf_path = download_file_from_s3(input_pdf_s3_key, str(local_base_dir), bucket_name=s3_bucket)
 
-    # Extract images to a folder using pymupdf
-    extract_images_to_folder(pdf_file, image_folder)
+    if not local_pdf_path:
+        print(f"Error downloading PDF from '{input_pdf_s3_key}'.")
+        return
+    
+    # Step 2: Extract text and upload Markdown file to S3
+    markdown_local_path = output_dir / f'{Path(local_pdf_path).stem}_extracted_output.md'
+    extract_text_with_docling(local_pdf_path, markdown_local_path)
+    markdown_s3_key = f'{s3_prefix_text}/{Path(markdown_local_path).name}'
+    upload_file_to_s3(str(markdown_local_path), markdown_s3_key, bucket_name=s3_bucket)
 
-    # Extract tables with Docling
-    extract_tables_with_docling(pdf_file, table_folder)
+    # Step 3: Extract images and upload the directory to S3
+    images_local_folder = output_dir / "extracted_images"
+    extract_images_to_folder(local_pdf_path, images_local_folder)
+    upload_directory_to_s3(str(images_local_folder), s3_prefix_images, bucket_name=s3_bucket)
+
+    # Step 4: Extract tables and upload the directory to S3
+    tables_local_folder = output_dir / "extracted_tables"
+    extract_tables_with_docling(local_pdf_path, tables_local_folder)
+    upload_directory_to_s3(str(tables_local_folder), s3_prefix_tables, bucket_name=s3_bucket)
 
 if __name__ == '__main__':
     main()
