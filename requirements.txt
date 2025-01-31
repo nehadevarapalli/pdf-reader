@@ -4,6 +4,7 @@ boto3==1.36.10
 camelot
 docling==2.17.0
 fastapi[standard]
+frontend
 markitdown==0.0.1a3
 matplotlib==3.10.0
 pandas==2.2.3
@@ -12,5 +13,5 @@ Pillow
 pymupdf
 pypdf
 Requests
+streamlit
 typer
-frontend
