@@ -1,4 +1,5 @@
 import os
+import shutil
 import fitz
 import pandas as pd
 from pathlib import Path
@@ -143,6 +144,13 @@ def main():
                 },
                 bucket_name=s3_bucket
             )
+
+    # Step 5: Cleanup
+    if os.path.exists(local_base_dir):
+        shutil.rmtree(local_base_dir)
+        print(f"Deleted temporary directory: {local_base_dir}")
+
+    print("PythonParser PDF Extraction complete.")
             
 if __name__ == '__main__':
     main()
