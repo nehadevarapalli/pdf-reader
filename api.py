@@ -1,15 +1,20 @@
 import os
 from pathlib import Path
+from pydantic import BaseModel
 from fastapi import FastAPI, UploadFile, HTTPException, status
 from fastapi.responses import FileResponse
 from pipelines import standardize_docling, standardize_markitdown, html_to_md_docling, get_job_name, pdf_to_md_docling, clean_temp_files
 
 app = FastAPI()
 
+class URLRequest(BaseModel):
+    url: str
+
 @app.post("/processurl/", status_code=status.HTTP_200_OK)
-async def process_url(url: str):
+async def process_url(request: URLRequest):
     clean_temp_files()
     try:
+        url = request.url
         job_name = get_job_name()
         markdown_output = html_to_md_docling(url, job_name)
     except Exception as e:

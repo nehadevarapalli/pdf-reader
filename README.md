@@ -1,4 +1,4 @@
-# pdf-reader
+# doc-reader
 
 # PDF Parsing with Python: Methods & Implementation
 
