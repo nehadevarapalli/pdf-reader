@@ -7,3 +7,4 @@ frontend
 pymupdf
 pypdf
 camelot-py
+ghostscript
