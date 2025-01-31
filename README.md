@@ -1,14 +1,70 @@
 # pdf-reader
-## 🔧 AWS S3 Setup for Team Members
 
-Follow these steps to configure your environment for working with AWS S3:
+# PDF Parsing with Python: Methods & Implementation
 
-### 1. Install Dependencies
+## **Overview**
+This document outlines the methodologies tested for parsing PDFs in Python, focusing on the optimal combination of **Docling** (for text/table extraction) and **PyMuPDF** (for images). Alternative methods (`PyPDF`, `PDFPlumber`, `Camelot`) were prototyped and archived under `/prototyping`.
+
+---
+
+## **Accuracy Assessment of PDF Parsing Libraries**
+
+| **Library**     | **Text Extraction** | **Image Extraction** | **Table Extraction** | **Speed** | **Complexity** |  
+|------------------|----------------------|----------------------|----------------------|-----------|-----------------|
+| **PyPDF**        | Good (text-based)   | Basic (no OCR)       | Poor                 | Fast      | Low             |  
+| **PyMuPDF**      | Good (text-based)   | **Excellent**        | Poor                 | Fast      | Moderate        |  
+| **PDFPlumber**   | Good (text-based)   | Good (no OCR)        | Moderate             | Moderate  | High            |  
+| **Camelot**      | None                | None                 | Good (But doesn't detect semi-lattice tables)        | Slow      | High            |  
+| **Docling**      | **Excellent**       | Poor                 | **Excellent (Detects all kinds of tables accurately)**    | Moderate  | Moderate        |  
+
+### **Key Observations**
+- **Docling**: Best for text (preserves structure) and AI-based table extraction but lacks in image extraction qualities. 
+- **PyMuPDF**: Superior for image extraction and fast text extraction.  
+- **Camelot**: Specialized for tables but requires Ghostscript on the OS level and Java.  
+- **Combination**: **Docling + PyMuPDF** covers text, tables, and images efficiently.
+
+---
+
+## **Optimal Workflow: Docling + PyMuPDF**
+
+### **How They Work Together**
+1. **Text & Tables**:
+   - **Docling** extracts text and tables into structured Markdown/CSV.  
+   - Uses AI models for complex layouts but may miss nested tables.  
+2. **Images**:
+   - **PyMuPDF** extracts embedded images with metadata (resolution, format).  
+   - Saves images as `PNG`/`JPEG` with page-wise naming.
+
+### **Pros**  
+- **Accuracy**: Docling preserves formatting; PyMuPDF handles high-res images.  
+- **Speed**: Parallel processing possible for large PDFs.  
+- **Integration**: Seamless S3 integration for cloud storage.  
+
+### **Cons**  
+- **Docling**: Limited to text-based PDFs (no OCR for scanned files).  
+- **PyMuPDF**: No native table extraction.  
+
+---
+
+## **Local Setup**
+
+### **Step 1: Create a Virtual Environment**
+**For Unix/macOS**
 ```
-pip install boto3 awscli
+python -m venv venv source venv/bin/activate
+```
+**For Windows**
+```
+python -m venv venv .\venv\Scripts\activate
 ```
 
-### 2. AWS Credentials Configuration
+
+### **Step 2: Install Dependencies**
+```
+pip install -r requirements.txt
+```
+
+### **Step 3: Configure AWS Credentials**
 Run this command and enter the credentials provided:
 ```
 aws configure
@@ -20,90 +76,40 @@ AWS Secret Access Key: [YOUR_SECRET_KEY]
 Default region name: us-east-2  
 Default output format: [Press enter for None]
 ```
-
-# Python PDF Parser
-
-This Python tool extracts text, tables, images, and potential charts from PDF files. It uses a combination of libraries such as `pdfplumber`, `PyMuPDF (fitz)`, and `PIL` to achieve these functionalities.
-
-## Setup Instructions
-
-### Recommended IDE: Visual Studio Code (VSCode)
-
-To use the tool, we recommend Visual Studio Code for its great support for Python and ease of use. Follow the steps below to set up your environment.
-
-### Step 1: Clone or Download the Repository
-
-1. **Clone the repository** (or download the code if you're working with local files):
-    ```bash
-    git clone https://github.com/nehadevarapalli/pdf-reader.git
-    ```
-
-2. **Open the project directory in VSCode**:
-    ```bash
-    cd your-repository-path
-    code .
-    ```
-
-### Step 2: Install Required Libraries
-
-Ensure you have all required Python libraries installed. The easiest way is to use a `requirements.txt` file, which contains the necessary libraries for the project.
-
-**Install dependencies** using pip:
-
-Open the integrated terminal in VSCode and run the following command:
-
-```bash
-pip install -r requirements.txt
+**Bucket Structure**:
+```
+neu-pdf-webpage-parser/
+├── pdfs/
+│   ├── raw/                   # Raw PDFs
+│   ├── python-parser/          # Processed outputs
+│       ├── extracted-text/     # Markdown files
+│       ├── extracted-images/   # Images (PNG/JPEG)
+│       ├── extracted-tables/   # CSV files
 ```
 
-### Step 3: Running the Script (`parser.py`)
 
-
-To run the script, execute the following command in your VSCode terminal:
-
-```bash
-python parser.py
+### **Run the Script**
+```
+python python_pdf_extraction.py
 ```
 
-**Results:**
 
-- **Text Extracted**: The total number of characters extracted from the PDF's text.
-- **Tables Extracted**: The total number of tables found in the PDF.
-- **Found Images**: The total number of images extracted.
-- **Potential Charts**: The total number of images that could be charts (this is a heuristic detection).
-- **Visualizations**: If any charts are identified, they are visualized and displayed as images using `matplotlib`. This is helpful when the PDF contains graphs or data visualizations that need to be analyzed.
-
-**Findings:**
-The table extraction functionality in the tool does not currently work as expected. Instead of extracting tables in their structured format (with rows and columns), the tables are being returned as plain text. 
+### **Cleanup**
+```
+deactivate  # Exit the virtual environment
+```
 
 
+This setup ensures isolation of dependencies and reproducibility across environments. The virtual environment (`venv/`) and temporary files (`temp_processing/`) are excluded from Git via `.gitignore`.
 
-## Accuracy Assessment
+---
 
-The accuracy of the tool depends on the quality and structure of the PDF. The text extraction is quite reliable in most PDFs, but complex layouts, scanned images, or embedded fonts may reduce its accuracy.
+## **Future Improvements**
+- **OCR Integration**: Add Tesseract for scanned PDFs.  
+- **Error Handling**: Retry mechanisms for S3 uploads.  
+- **Scalability**: Batch processing for multiple PDFs.  
 
+---
 
-
-## Processing Time
-
-The time taken for processing will depend on the size and complexity of the PDF. For example, with a PDF containing 75 images and 47,000 characters of text, the processing time was as follows:
-
-- CPU times: user 4.5 s
-- sys: 21.4 ms
-- total: 4.52 s 
-- Wall time: 4.61 s
-
-This indicates that the processing was quite fast (around 4.5 seconds for a PDF of this size).
-
-### Factors Affecting Processing Time
-- **PDF Size**: Larger PDFs with more pages, images, or tables will take longer.
-- **Image Complexity**: Extracting high-quality images may take additional processing time.
-- **Table Structure**: Complex or poorly structured tables might increase extraction time.
-
-
-
-## Conclusion
-
-This tool provides a comprehensive and fast way to extract and visualize content from PDFs, including text, tables, images, and charts. It is useful for a variety of applications such as data extraction, document analysis, and report generation.
-
-
+## **Conclusion**
+The **Docling + PyMuPDF** combination balances accuracy, speed, and ease of integration with cloud workflows. Archived prototypes (`PyPDF`, `PDFPlumber`, `Camelot`) are available in `/prototyping` for reference.
