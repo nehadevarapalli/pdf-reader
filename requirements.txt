@@ -13,4 +13,5 @@ Pillow
 pymupdf
 pypdf
 Requests
+streamlit
 typer
