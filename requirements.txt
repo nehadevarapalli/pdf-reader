@@ -15,4 +15,3 @@ pypdf
 Requests
 streamlit
 typer
-frontend
