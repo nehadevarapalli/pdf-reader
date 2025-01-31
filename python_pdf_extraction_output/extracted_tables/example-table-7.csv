@@ -1,0 +1,6 @@
+,Removed blocks Parameters Epochs Accuracy,Removed blocks Parameters Epochs Accuracy,Removed blocks Parameters Epochs Accuracy,Removed blocks Parameters Epochs Accuracy
+0,None,21.82M,20,0.96
+1,1,15.7,40,0.96
+2,3,8.9M,50,0.94
+3,5,5M,60,0.96
+4,7,2.1M,70,0.90

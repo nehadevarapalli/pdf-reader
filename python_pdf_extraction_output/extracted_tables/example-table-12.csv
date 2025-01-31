@@ -1,0 +1,6 @@
+,Initialization,Accuracy,Loss,# Parameters,Ratio
+0,Glorot Uniform,0.78,0.56,29480,2.64
+1,Glorot Normal,0.78,0.52,29480,2.64
+2,He Normal,0.76,0.82,29480,2.57
+3,Random Normal,0.77,0.8,29480,2.61
+4,Zeros,0.14,2.1,29480,0.5

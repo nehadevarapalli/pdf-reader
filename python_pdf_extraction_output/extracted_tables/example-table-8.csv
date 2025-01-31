@@ -1,0 +1,8 @@
+,Data augmentation,,Value Accuracy
+0,None,-,0.90
+1,Horizontal Flip (HF),True,0.93
+2,Zoom (Z),20%,0.92
+3,Rotate (R),10º,0.92
+4,Shear (S),20%,0.92
+5,Width Shift (WS),20%,0.92
+6,Height Shift (HS),20%,0.92

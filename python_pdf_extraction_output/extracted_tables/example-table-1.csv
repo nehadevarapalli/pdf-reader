@@ -1,0 +1,5 @@
+,Descriptor,Type,Accuracy
+0,SIFT,Vanilla Dense,0.55 0.74
+1,SURF,Vanilla,0.62
+2,SURF,Dense,0.63
+3,DAISY,Dense,0.66

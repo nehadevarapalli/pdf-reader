@@ -1,0 +1,4 @@
+,Activation,Accuracy,Loss,# Parameters,Ratio
+0,Relu,0.78,0.56,29480,2.64
+1,Elu,0.76,0.85,29480,2.58
+2,Tanh,0.74,0.74,29480,2.5

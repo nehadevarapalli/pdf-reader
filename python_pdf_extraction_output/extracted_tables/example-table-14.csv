@@ -1,0 +1,4 @@
+,Optimizer,Accuracy,Loss,# Parameters,Ratio
+0,RMS prop,0.74,0.52,66344,1.12
+1,Adam,0.82,0.68,66344,1.25
+2,SGD,0.81,0.75,66344,1.22
