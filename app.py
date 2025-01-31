@@ -15,7 +15,10 @@ if st.button('Process'):
     if uploaded_file:
         # Process PDF
         files = {"file:": (uploaded_file.name, uploaded_file)}
-        response = requests.post(f"{FASTAPI_URL}/processpdf/", files=files)
+        response = requests.post(
+            f"{FASTAPI_URL}/processpdf/", 
+            files={"file": (uploaded_file.name, uploaded_file, "application/pdf")}
+            )
 
         if response.status_code == 200:
             data = response.content
