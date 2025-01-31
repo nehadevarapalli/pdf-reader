@@ -1,14 +1,14 @@
 import os
 import base64
 import logging
+import csv
 from dotenv import load_dotenv
 from llama_parse import LlamaParse
-from pdf2image import convert_from_path  # Fallback for image extraction
+import fitz 
 
-# Set up logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-# Load environment variables
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+
 load_dotenv()
 
 # Get API key and PDF path from environment variables
@@ -16,100 +16,124 @@ LLAMA_API_KEY = os.getenv('LLAMAPARSE_API_KEY')
 pdf_path = os.getenv('new_pdf')
 
 # Validate environment variables
-if not LLAMA_API_KEY:
-    raise ValueError("LLAMAPARSE_API_KEY not found in environment variables")
-if not pdf_path:
-    raise ValueError("PDF file path not found in environment variables")
+absolute_pdf_path = os.path.abspath(pdf_path)
+logging.info(f"Checking file path: {absolute_pdf_path}")
 
-# Create output directory for images
-output_dir = os.path.join(os.getcwd(), 'extracted_images')
-os.makedirs(output_dir, exist_ok=True)
+if not os.path.exists(absolute_pdf_path):
+    raise FileNotFoundError(f"Error: The file '{absolute_pdf_path}' was not found. Please check the file path.")
 
-# Initialize LlamaParse with updated parameters
-parser = LlamaParse(
-    api_key=LLAMA_API_KEY,
-    result_type="markdown",  # Using "markdown" since "structured" and "json" fail
-    verbose=True,
-    language="en",
-    auto_mode_trigger_on_image_in_page=True,
-    auto_mode_trigger_on_table_in_page=True,
-    complemental_formatting_instruction="Extract and preserve all images",
-    content_guideline_instruction="Include all visual elements",
-    disable_image_extraction=False,
-    take_screenshot=True
-)
+# Initialize LlamaParse
+llama_parse = LlamaParse(api_key=LLAMA_API_KEY, extract_layout=True)
 
 try:
-    # Load and parse the PDF
-    logging.info(f"Starting to parse file: {pdf_path}")
-    documents = parser.load_data(pdf_path)
-    logging.info(f"File parsing completed. Raw response: {documents}")
-
-    # Debug: Check document contents
-    for doc in documents:
-        logging.info(f"Document metadata: {doc.metadata}")
-
-    # Counter for image naming
-    image_count = 0
-    extracted_images = False
-
-    # Extract and save images from LlamaParse
-    for doc in documents:
-        logging.info(f"Checking for images in parsed document.")
-
-        # Check `image_resource` (Primary method)
-        if hasattr(doc, 'image_resource') and doc.image_resource:
-            logging.info(f"Number of images found in `image_resource`: {len(doc.image_resource)}")
-            for image_data in doc.image_resource:
-                try:
-                    image_bytes = base64.b64decode(image_data)
-                    image_filename = f'extracted_image_{image_count+1}.png'
-                    image_filepath = os.path.join(output_dir, image_filename)
-
-                    with open(image_filepath, 'wb') as img_file:
-                        img_file.write(image_bytes)
-
-                    logging.info(f"Saved image: {image_filepath}")
-                    image_count += 1
-                    extracted_images = True
-                except Exception as e:
-                    logging.error(f"Error saving image: {e}", exc_info=True)
-
-        # Check `extra_info['images']` (Fallback method)
-        elif hasattr(doc, 'extra_info') and isinstance(doc.extra_info, dict) and 'images' in doc.extra_info:
-            logging.info(f"Number of images found in `extra_info`: {len(doc.extra_info['images'])}")
-            for image_data in doc.extra_info['images']:
-                try:
-                    image_bytes = base64.b64decode(image_data)
-                    image_filename = f'extracted_image_{image_count+1}.png'
-                    image_filepath = os.path.join(output_dir, image_filename)
-
-                    with open(image_filepath, 'wb') as img_file:
-                        img_file.write(image_bytes)
-
-                    logging.info(f"Saved image: {image_filepath}")
-                    image_count += 1
-                    extracted_images = True
-                except Exception as e:
-                    logging.error(f"Error saving image: {e}", exc_info=True)
-
-    # If no images were found, use `pdf2image` 
-    if not extracted_images:
-        logging.warning("No images extracted from LlamaParse. Using pdf2image as a fallback.")
-
-        # Convert PDF pages to images
-        images = convert_from_path(pdf_path)
-        for i, image in enumerate(images):
-            image_filename = f"fallback_extracted_image_{i+1}.png"
-            image_filepath = os.path.join(output_dir, image_filename)
-            image.save(image_filepath, "PNG")
-            logging.info(f"Saved fallback image: {image_filepath}")
-
-    logging.info(f"\nTotal images extracted: {image_count}")
-    logging.info(f"Images saved to: {output_dir}")
-
+    
+    logging.info("Parsing PDF with LlamaParse...")
+    parsed_docs = llama_parse.load_data(absolute_pdf_path)
 except Exception as e:
-    logging.error(f"An error occurred during processing: {e}", exc_info=True)
+    logging.error(f"Error parsing the file with LlamaParse: {e}")
+    raise
 
-finally:
-    logging.info("Processing completed")
+# Creating output directories
+output_folder = "output"
+images_folder = os.path.join(output_folder, "images")
+tables_folder = os.path.join(output_folder, "tables")
+os.makedirs(images_folder, exist_ok=True)
+os.makedirs(tables_folder, exist_ok=True)
+logging.info(f"Created output folders: {images_folder}, {tables_folder}")
+
+# Markdown output storage
+markdown_output = []
+
+image_count = 0
+tables_extracted = False
+images_extracted = False
+
+for doc_index, doc in enumerate(parsed_docs):
+    markdown_output.append(f"# Document: {doc.metadata.get('file_name', f'Unnamed_{doc_index}')}\n\n")
+    markdown_output.append(f"{doc.text}\n\n")
+
+    
+    if hasattr(doc, 'tables') and doc.tables:
+        tables_extracted = True
+        markdown_output.append("## Tables\n")
+        for table_index, table in enumerate(doc.tables):
+            table_filename = f"table_{doc_index}_{table_index}.csv"
+            table_path = os.path.join(tables_folder, table_filename)
+
+            
+            with open(table_path, 'w', newline='', encoding='utf-8') as csvfile:
+                csv_writer = csv.writer(csvfile)
+                csv_writer.writerows(table)
+
+            # Add table reference to markdown
+            markdown_output.append(f"[Table {table_index + 1}]({os.path.join('tables', table_filename)})\n\n")
+            for row in table:
+                markdown_output.append("| " + " | ".join(row) + " |\n")
+            markdown_output.append("|" + " --- |" * len(table[0]) + "\n\n")
+
+    # Process Images from LlamaParse
+    if hasattr(doc, 'images') and doc.images:
+        images_extracted = True
+        logging.info(f"Found {len(doc.images)} images in document {doc_index}.")
+        markdown_output.append("## Images\n")
+        for img_index, img in enumerate(doc.images):
+            img_filename = f"image_{doc_index}_{img_index}.jpeg"
+            img_path = os.path.join(images_folder, img_filename)
+
+            try:
+                decoded_image = base64.b64decode(img)
+                with open(img_path, "wb") as img_file:
+                    img_file.write(decoded_image)
+
+                # Add image reference to markdown
+                markdown_output.append(f"![Image {img_index + 1}]({os.path.join('images', img_filename)})\n\n")
+                logging.info(f"Saved LlamaParse image: {img_path}")
+
+            except Exception as e:
+                logging.error(f"Error decoding or saving LlamaParse image {img_index + 1}: {e}")
+
+
+if not images_extracted:
+    
+    # Function to extract images using PyMuPDF
+    def extract_images_with_pymupdf(pdf_path, images_folder):
+        doc = fitz.open(pdf_path)  # Open the PDF
+        image_count = 0
+
+        for page_number in range(len(doc)):
+            for img_index, img in enumerate(doc[page_number].get_images(full=True)):
+                xref = img[0]
+                base_image = doc.extract_image(xref)
+                img_bytes = base_image["image"]
+
+                # Save extracted image
+                img_filename = f"image_{page_number+1}_{img_index+1}.png"
+                img_path = os.path.join(images_folder, img_filename)
+
+                with open(img_path, "wb") as img_file:
+                    img_file.write(img_bytes)
+
+                logging.info(f"Saved image: {img_path}")
+                image_count += 1
+
+        return image_count
+
+    # Save it in the markdown file
+    try:
+        new_image_count = extract_images_with_pymupdf(absolute_pdf_path, images_folder)
+        if new_image_count == 0:
+            logging.warning("No images found using PyMuPDF either.")
+        else:
+            markdown_output.append(f"## Extracted Images\n")
+            for i in range(1, new_image_count + 1):
+                markdown_output.append(f"![Image {i}]({os.path.join('images', f'image_{i}.png')})\n\n")
+
+    except Exception as e:
+        logging.error(f"Error extracting images with PyMuPDF: {e}")
+
+# Save extracted content to a Markdown file
+md_file_path = os.path.join(output_folder, "extracted_output.md")
+with open(md_file_path, "w", encoding="utf-8") as f:
+    f.writelines(markdown_output)
+
+logging.info(f"Extraction completed.Check output folder: {output_folder}")
