@@ -1,5 +1,0 @@
-,Architecture,Accuracy,Loss,# Parameters,Ratio
-0,Baseline,0.77,0.53,19368,3.97
-1,Three layers,0.8,0.75,20424,3.94
-2,Four layers,0.81,0.8,29672,2.48
-3,Five layers,0.77,0.67,38152,2.03

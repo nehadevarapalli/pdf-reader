@@ -1,6 +1,0 @@
-,Kernel.,Accuracy.Mean,Accuracy.Std Dev
-0,Linear,0.77,0.03
-1,Poly,0.76,0.03
-2,RBF,0.83,0.02
-3,Sigmoid,0.81,0.02
-4,Histogram intersection,0.81,0.02

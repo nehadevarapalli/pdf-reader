@@ -1,7 +1,0 @@
-,Shape,Level,None,,Normalization L2 Power,StandardScaler
-0,Square,0,0.81,0.81,0.81,0.81
-1,Square,1,0.81,0.82,0.81,0.82
-2,Square,2,0.82,0.83,0.82,0.83
-3,Horizontal,0,0.81,0.81,0.81,0.81
-4,Horizontal,1,0.82,0.83,0.83,0.84
-5,Horizontal,2,0.82,0.83,0.83,0.83

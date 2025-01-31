@@ -1,9 +1,0 @@
-,MLP Configuration,Accuracy
-0,Baseline,0.61
-1,Optimal Learning Rate,0.61
-2,Different Image Sizes,0.64
-3,Different Layer Sizes,0.65
-4,Increasing Depth,0.66
-5,DF + SVM,0.53
-6,Aggregating predictions,0.72
-7,DF as a dense descriptor + BoVW,0.70
