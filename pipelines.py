@@ -1,11 +1,15 @@
 import os
 from pathlib import Path
+
+from cloud_ops import download_file_from_s3, upload_file_to_s3, upload_directory_to_s3
 from webscraper import WebScraper
 from docling.document_converter import DocumentConverter
 from markitdown import MarkItDown
 import uuid
+from python_pdf_extraction import extract_text_with_docling, extract_images_to_folder, extract_tables_with_docling
 
-output = Path('./output')
+base_dir = Path('./temp_processing')
+output = base_dir / Path('output')
 
 def html_to_md_docling(url: str, job_name: uuid):
     doc_converter = DocumentConverter()
@@ -48,6 +52,38 @@ def standardize_markitdown(file: Path, job_name: uuid):
     with open(markdown_path, 'w') as f:
         f.write(conv_result.text_content)
     return markdown_path
+
+def pdf_to_md_docling(file: Path, job_name: uuid):
+    s3_bucket = 'neu-pdf-webpage-parser'
+    s3_input_prefix = 'pdfs/raw'
+    s3_prefix_text = 'pdfs/python-parser/extracted-text'
+    s3_prefix_images = 'pdfs/python-parser/extracted-images'
+    s3_prefix_tables = 'pdfs/python-parser/extracted-tables'
+
+    os.makedirs(base_dir, exist_ok=True)
+    os.makedirs(output, exist_ok=True)
+
+    # Step 1: Upload input PDF to S3
+    input_pdf_s3_key = f'{s3_input_prefix}/{job_name}.pdf'
+    upload_file_to_s3(str(file), input_pdf_s3_key, bucket_name=s3_bucket)
+
+    # Step 2: Extract text and upload Markdown file to S3
+    markdown_local_path = output / f'{job_name}.md'
+    extract_text_with_docling(file, markdown_local_path)
+    markdown_s3_key = f'{s3_prefix_text}/{Path(markdown_local_path).name}'
+    upload_file_to_s3(str(markdown_local_path), markdown_s3_key, bucket_name=s3_bucket)
+
+    # Step 3: Extract images and upload the directory to S3
+    images_local_folder = output / "extracted_images"
+    extract_images_to_folder(file, images_local_folder)
+    upload_directory_to_s3(str(images_local_folder), s3_prefix_images, bucket_name=s3_bucket)
+
+    # Step 4: Extract tables and upload the directory to S3
+    tables_local_folder = output / "extracted_tables"
+    extract_tables_with_docling(file, tables_local_folder)
+    upload_directory_to_s3(str(tables_local_folder), s3_prefix_tables, bucket_name=s3_bucket)
+
+    return markdown_local_path
 
 def get_job_name():
     return uuid.uuid4()
