@@ -7,7 +7,7 @@ import pytesseract
 import cv2
 import numpy as np
 from PIL import Image
-from pypdf import PdfReader
+#from pypdf import PdfReader
 
 # Set output directories
 OUTPUT_DIR = "output"
@@ -21,7 +21,7 @@ os.makedirs(IMAGE_DIR, exist_ok=True)
 os.makedirs(TABLE_DIR, exist_ok=True)
 
 # Set Tesseract OCR path
-# pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
 
 # Function to open a PDF file
 def open_pdf(file_path):
@@ -78,38 +78,38 @@ def extract_images(pdf_file):
     return image_files, markdown_references
 
 # Function to extract formulas and preserve structure
-# def extract_formulas(pdf_file):
-#     doc = fitz.open(stream=pdf_file, filetype="pdf")
-#     formula_images = []
-#     markdown_references = []
+def extract_formulas(pdf_file):
+    doc = fitz.open(stream=pdf_file, filetype="pdf")
+    formula_images = []
+    markdown_references = []
     
-#     for page_num in range(len(doc)):
-#         page = doc.load_page(page_num)
-#         images = page.get_images(full=True)
+    for page_num in range(len(doc)):
+        page = doc.load_page(page_num)
+        images = page.get_images(full=True)
 
-#         for img_idx, img in enumerate(images, start=1):
-#             xref = img[0]
-#             base_image = doc.extract_image(xref)
-#             img_bytes = base_image["image"]
-#             image = Image.open(io.BytesIO(img_bytes))
+        for img_idx, img in enumerate(images, start=1):
+            xref = img[0]
+            base_image = doc.extract_image(xref)
+            img_bytes = base_image["image"]
+            image = Image.open(io.BytesIO(img_bytes))
 
-#             # Convert to grayscale and process for OCR
-#             gray = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2GRAY)
-#             _, binarized = cv2.threshold(gray, 128, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+            # Convert to grayscale and process for OCR
+            gray = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2GRAY)
+            _, binarized = cv2.threshold(gray, 128, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
 
 #             # Extract text using OCR
-#             formula_text = pytesseract.image_to_string(binarized, config="--psm 6")
+            formula_text = pytesseract.image_to_string(binarized, config="--psm 6")
 
-#             if formula_text.strip():
-#                 formula_img_path = os.path.join(IMAGE_DIR, f"formula_page_{page_num + 1}_{img_idx}.jpeg")
-#                 image.save(formula_img_path, "JPEG")
-#                 formula_images.append(formula_img_path)
-#                 markdown_references.append(f"\n### Formula on Page {page_num + 1}\n![Formula](images/{os.path.basename(formula_img_path)})\n")
+            if formula_text.strip():
+                formula_img_path = os.path.join(IMAGE_DIR, f"formula_page_{page_num + 1}_{img_idx}.jpeg")
+                image.save(formula_img_path, "JPEG")
+                formula_images.append(formula_img_path)
+                markdown_references.append(f"\n### Formula on Page {page_num + 1}\n![Formula](images/{os.path.basename(formula_img_path)})\n")
 
-#     return formula_images, markdown_references
+    return formula_images, markdown_references
 
 # Function to generate Markdown file with preserved structure
-def generate_markdown(text, tables, images): #, formulas):
+def generate_markdown(text, tables, images, formulas):
     with open(MD_FILE, "w", encoding="utf-8") as md:
         md.write("# Extracted PDF Content\n\n")
         md.write(text + "\n\n")
@@ -124,9 +124,9 @@ def generate_markdown(text, tables, images): #, formulas):
             md.write("\n## Extracted Images\n")
             md.writelines(images)
 
-        # if formulas:
-        #     md.write("\n## Extracted Formulas\n")
-        #     md.writelines(formulas)
+        if formulas:
+            md.write("\n## Extracted Formulas\n")
+            md.writelines(formulas)
 
 # Main function to process the PDF
 def process_pdf(pdf_path):
@@ -140,11 +140,11 @@ def process_pdf(pdf_path):
     print("Extracting images...")
     images, image_references = extract_images(pdf_file)
 
-    # print("Extracting formulas using OCR...")
-    # formulas, formula_references = extract_formulas(pdf_file)
+    print("Extracting formulas using OCR...")
+    formulas, formula_references = extract_formulas(pdf_file)
 
     print("Generating Markdown output...")
-    generate_markdown(text, tables, image_references) #, formula_references)
+    generate_markdown(text, tables, image_references, formula_references)
 
     print("Extraction complete! Check the 'output' folder.")
 
