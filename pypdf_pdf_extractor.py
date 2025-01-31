@@ -13,35 +13,30 @@ table_folder = "pypdf_extracted_tables"
 # PDF reader object
 reader = PdfReader(pdf_file)
 
-# Extract text from the PDF and save to a Markdown file
-def extract_text_to_markdown(reader, output_file):
+# Extract text and images together, rendering images in place
+def extract_text_and_images_to_markdown(reader, output_file, image_folder):
+    os.makedirs(image_folder, exist_ok=True)
     with open(output_file, 'w', encoding='utf-8') as f:
         for page_number, page in enumerate(reader.pages):
-            text = page.extract_text()
             f.write(f'# Page {page_number + 1}\n\n')
+
+            # Extract text
+            text = page.extract_text()
             if text:
                 f.write(text + '\n\n')
             else:
-                f.write('No text found on this page.\n\n')   
-    print(f'Text extraction completed from {pdf_file} and saved to {output_file}')
+                f.write('No text found on this page.\n\n')
 
-# Extract images from the PDF and add links to Markdown
-def extract_images_from_pdf(reader, output_file, image_folder):
-    os.makedirs(image_folder, exist_ok=True)
-    with open(output_file, "a", encoding="utf-8") as f:
-        for page_number, page in enumerate(reader.pages):
-                for image_index, image_file_object in enumerate(page.images):
-                    # Generate unique image filename
-                    image_name = f"page_{page_number + 1}_image_{image_index + 1}_{image_file_object.name}"
-                    image_path = os.path.join(image_folder, image_name)
-
-                    # Save the image to the folder
-                    with open(image_path, "wb") as image_file:
-                        image_file.write(image_file_object.data)
-                    
-                    # Add a link to the image in the Markdown file
-                    f.write(f"![Image](./{image_folder}/{image_name})\n\n")                  
-    print(f"Image extraction completed. Images saved to '{image_folder}'.")
+            # Extract images
+            for image_index, image_object in enumerate(page.images):
+                image_name = f'page_{page_number + 1}_image_{image_index + 1}_{image_object.name}'
+                image_path = os.path.join(image_folder, image_name)
+                
+                with open(image_path, 'wb') as image_file:
+                    image_file.write(image_object.data)
+                
+                f.write(f'![Image](./{image_folder}/{image_name})\n\n') # Link to image
+        print(f'Text and image extracted and saved to "{output_file}". Images saved to "{image_folder}".')
 
 # Extract tables from the PDF and add links to Markdown
 def extract_tables_from_pdf(pdf_file, output_file, table_folder):
@@ -71,11 +66,8 @@ def extract_tables_from_pdf(pdf_file, output_file, table_folder):
 
 # Main function to perform complete extraction
 def main():
-    # Extract text and save to Markdown file
-    extract_text_to_markdown(reader, output_file)
-
-    # Extract images and add links to Markdown file
-    extract_images_from_pdf(reader, output_file, image_folder)
+    # Extract text and images together to Markdown file
+    extract_text_and_images_to_markdown(reader, output_file, image_folder)
 
     # Extract tables and add links to Markdown file
     extract_tables_from_pdf(pdf_file, output_file, table_folder)
