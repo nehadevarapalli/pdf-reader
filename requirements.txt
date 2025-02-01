@@ -10,6 +10,7 @@ matplotlib==3.10.0
 pandas==2.2.3
 pdfplumber
 Pillow
+pydantic
 pymupdf
 pypdf
 Requests
