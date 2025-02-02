@@ -1,6 +1,5 @@
-__pycache__
 .venv
-.vscode
-.pytest_cache
-prototyping
-assets
+assets/
+frontend/
+*.log
+__pycache__
