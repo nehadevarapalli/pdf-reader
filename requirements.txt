@@ -7,8 +7,10 @@ markitdown==0.0.1a3
 matplotlib==3.10.0
 pandas==2.2.3
 Pillow
-pydantic
 pymupdf
+pypdf
 Requests
 streamlit
-typer
+pathlib~=1.0.1
+python-dotenv~=1.0.1
+llama-parse~=0.5.20

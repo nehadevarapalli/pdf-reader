@@ -1,9 +1,11 @@
 import os
-from pathlib import Path
-from bs4 import BeautifulSoup, ResultSet
-import requests
-import pandas as pd
 from io import StringIO
+from pathlib import Path
+
+import pandas as pd
+import requests
+from bs4 import BeautifulSoup, ResultSet
+
 
 class WebScraper:
 
@@ -22,7 +24,7 @@ class WebScraper:
         os.makedirs(self.CSV_HOME, exist_ok=True)
         os.makedirs(self.HTML_HOME, exist_ok=True)
         os.makedirs(self.IMG_HOME, exist_ok=True)
-        self.file_outputs = {'image_count': 0 , 'table_count': 0}
+        self.file_outputs = {'image_count': 0, 'table_count': 0}
 
     def extract_all(self) -> dict[str, int]:
         """
@@ -48,7 +50,7 @@ class WebScraper:
     def extract_modify_images(self, images):
         for image_count, image in enumerate(images):
             image_url = image['src']
-            img_data = requests.get(self.url+'/'+image_url).content
+            img_data = requests.get(self.url + '/' + image_url).content
             file_path = self.IMG_HOME / f'{self.job_name}-img{image_count}.jpg'
             self.file_outputs['image_count'] += 1
             with open(file_path, 'wb') as handler:
@@ -65,5 +67,6 @@ class WebScraper:
             self.file_outputs['table_count'] += 1
             df.to_csv(file_path)
 
+
 if __name__ == '__main__':
-    modified_html = WebScraper('https://www.crummy.com/software/BeautifulSoup/bs4/doc/', 'bs4docs' ).extract_all()
+    modified_html = WebScraper('https://www.crummy.com/software/BeautifulSoup/bs4/doc/', 'bs4docs').extract_all()

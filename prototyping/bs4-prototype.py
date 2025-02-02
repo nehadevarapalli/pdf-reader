@@ -1,9 +1,9 @@
-from datetime import datetime
 import os
+from datetime import datetime
 
-from bs4 import BeautifulSoup, ResultSet
-import requests
 import pandas as pd
+import requests
+from bs4 import BeautifulSoup, ResultSet
 
 
 class WebScraper:
