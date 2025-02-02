@@ -1,5 +1,6 @@
-.venv
+.venv/
 assets/
 frontend/
 *.log
 __pycache__
+prototyping/
