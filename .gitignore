@@ -1,4 +1,3 @@
-venv/
-python_pdf_extraction_output/
-temp_processing/
-__pycache__/
+.venv/
+backend/temp_processing/
+backend/__pycache__/

@@ -10,7 +10,7 @@ from llama_parse import LlamaParse
 output_folder = Path("./temp_processing/output/pdf")
 
 
-async def llama_parse_pdf(pdf_path: str, job_name: str):
+def llama_parse_pdf(pdf_path: str, job_name: str):
     logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
     # load_dotenv() # already loaded in api.py
     # Get API key from environment variables
