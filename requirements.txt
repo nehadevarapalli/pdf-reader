@@ -1,9 +1,8 @@
-awscli
 beautifulsoup4==4.12.3
 boto3==1.36.10
 camelot
 docling==2.17.0
-fastapi[standard]
+fastapi[standard]~=0.115.8
 frontend
 markitdown==0.0.1a3
 matplotlib==3.10.0
@@ -15,3 +14,7 @@ pypdf
 Requests
 streamlit
 typer
+pathlib~=1.0.1
+pydantic~=2.10.6
+python-dotenv~=1.0.1
+llama-parse~=0.5.20
