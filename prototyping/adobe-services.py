@@ -47,7 +47,8 @@ class ExtractTextTableInfoWithFiguresTablesRenditionsFromPDF:
             # Create parameters for the job
             extract_pdf_params = ExtractPDFParams(
                 elements_to_extract=[ExtractElementType.TEXT, ExtractElementType.TABLES],
-                elements_to_extract_renditions=[ExtractRenditionsElementType.TABLES, ExtractRenditionsElementType.FIGURES],
+                elements_to_extract_renditions=[ExtractRenditionsElementType.TABLES,
+                                                ExtractRenditionsElementType.FIGURES],
             )
 
             # Creates a new job instance
