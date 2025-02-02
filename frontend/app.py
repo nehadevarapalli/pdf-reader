@@ -1,6 +1,7 @@
-import streamlit as st
-import requests
 import os
+
+import requests
+import streamlit as st
 
 # Configuration
 FASTAPI_URL = os.getenv('FASTAPI_URL', 'http://localhost:8000')
@@ -16,14 +17,15 @@ if st.button('Process'):
         # Process PDF
         files = {"file:": (uploaded_file.name, uploaded_file)}
         response = requests.post(
-            f"{FASTAPI_URL}/processpdf/", 
+            f"{FASTAPI_URL}/processpdf/",
             files={"file": (uploaded_file.name, uploaded_file, "application/pdf")}
-            )
+        )
 
         if response.status_code == 200:
             data = response.content
             st.success("PDF processed successfully!")
-            st.download_button(label="Download Markdown", data=data, file_name=f"{uploaded_file.name}.md", mime="application/octet-stream")
+            st.download_button(label="Download Markdown", data=data, file_name=f"{uploaded_file.name}.md",
+                               mime="application/octet-stream")
         else:
             st.error(f"Error processing PDF: {response.text}")
 
@@ -37,9 +39,10 @@ if st.button('Process'):
         if response.status_code == 200:
             data = response.content
             st.success("Webpage processed successfully!")
-            st.download_button(label="Download Markdown", data=data, file_name=f"webpage.md", mime="application/octet-stream")
+            st.download_button(label="Download Markdown", data=data, file_name=f"webpage.md",
+                               mime="application/octet-stream")
         else:
             st.error(f"Error processing webpage: {response.text}")
-    
+
     else:
         st.warning("Please upload a PDF file or enter a webpage URL.")

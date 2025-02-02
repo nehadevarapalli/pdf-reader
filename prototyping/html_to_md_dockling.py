@@ -1,5 +1,6 @@
-from webscraper import WebScraper
 from docling.document_converter import DocumentConverter
+from webscraper import WebScraper
+
 
 def html_to_md(url: str, job_name: str):
     doc_converter = DocumentConverter()

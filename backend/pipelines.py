@@ -1,13 +1,15 @@
 import os
 import shutil
+import uuid
 from pathlib import Path
 
-from cloud_ops import download_file_from_s3, upload_file_to_s3, upload_directory_to_s3
-from webscraper import WebScraper
 from docling.document_converter import DocumentConverter
 from markitdown import MarkItDown
-import uuid
+
+from cloud_ops import upload_file_to_s3, upload_directory_to_s3
+from llamaparser_pdf import llama_parse_pdf
 from python_pdf_extraction import extract_text_with_docling, extract_images_to_folder, extract_tables_with_docling
+from webscraper import WebScraper
 
 base_dir = Path('./temp_processing')
 output = base_dir / Path('output')
@@ -15,10 +17,11 @@ s3_bucket = 'neu-pdf-webpage-parser'
 s3_pdf_input_prefix = 'pdfs/raw'
 s3_html_input_prefix = 'html/raw'
 
+
 def html_to_md_docling(url: str, job_name: uuid):
-    s3_prefix_text = 'pdfs/html-parser/extracted-text'
-    s3_prefix_images = 'pdfs/html-parser/extracted-images'
-    s3_prefix_tables = 'pdfs/html-parser/extracted-tables'
+    s3_prefix_text = 'html/html-parser/extracted-text'
+    s3_prefix_images = 'html/html-parser/extracted-images'
+    s3_prefix_tables = 'html/html-parser/extracted-tables'
 
     # Step 1: Extract images & tables
     out = WebScraper(url, job_name).extract_all()
@@ -46,10 +49,11 @@ def html_to_md_docling(url: str, job_name: uuid):
     upload_file_to_s3(str(markdown_path), markdown_s3_key, bucket_name=s3_bucket)
     return markdown_path
 
+
 def html_to_md_markitdown(url: str, job_name: uuid):
-    s3_prefix_text = 'pdfs/html-parser/extracted-text'
-    s3_prefix_images = 'pdfs/html-parser/extracted-images'
-    s3_prefix_tables = 'pdfs/html-parser/extracted-tables'
+    s3_prefix_text = 'html/html-parser/extracted-text'
+    s3_prefix_images = 'html/html-parser/extracted-images'
+    s3_prefix_tables = 'html/html-parser/extracted-tables'
 
     # Step 1: Extract images & tables
     out = WebScraper(url, job_name).extract_all()
@@ -76,6 +80,7 @@ def html_to_md_markitdown(url: str, job_name: uuid):
     upload_file_to_s3(str(markdown_path), markdown_s3_key, bucket_name=s3_bucket)
     return markdown_path
 
+
 def standardize_docling(file: Path, job_name: uuid):
     s3_prefix_text = 'pdfs/docling/extracted-text'
     doc_converter = DocumentConverter()
@@ -91,6 +96,7 @@ def standardize_docling(file: Path, job_name: uuid):
     upload_file_to_s3(str(markdown_path), markdown_s3_key, bucket_name=s3_bucket)
     return markdown_path
 
+
 def standardize_markitdown(file: Path, job_name: uuid):
     s3_prefix_text = 'pdfs/markitdown/extracted-text'
     md = MarkItDown()
@@ -105,12 +111,11 @@ def standardize_markitdown(file: Path, job_name: uuid):
     upload_file_to_s3(str(markdown_path), markdown_s3_key, bucket_name=s3_bucket)
     return markdown_path
 
+
 def pdf_to_md_docling(file: Path, job_name: uuid):
     s3_prefix_text = 'pdfs/python-parser/extracted-text'
     s3_prefix_images = 'pdfs/python-parser/extracted-images'
     s3_prefix_tables = 'pdfs/python-parser/extracted-tables'
-
-    # clean_temp_files()
 
     # Step 1: Upload input PDF to S3
     input_pdf_s3_key = f'{s3_pdf_input_prefix}/{job_name}.pdf'
@@ -134,11 +139,36 @@ def pdf_to_md_docling(file: Path, job_name: uuid):
 
     return markdown_local_path
 
+
+def pdf_to_md_enterprise(file: Path, job_name: uuid):
+    s3_prefix_text = 'pdfs/llama-parser/extracted-text'
+    s3_prefix_images = 'pdfs/llama-parser/extracted-images'
+    s3_prefix_tables = 'pdfs/llama-parser/extracted-tables'
+
+    markdown_path = llama_parse_pdf(str(file), job_name)
+
+    # Step 1: Upload input PDF to S3
+    input_pdf_s3_key = f'{s3_pdf_input_prefix}/{job_name}.pdf'
+    upload_file_to_s3(str(file), input_pdf_s3_key, bucket_name=s3_bucket)
+
+    # Step 3: Upload images and tables to S3
+    images_local_folder = output / "extracted_images"
+    tables_local_folder = output / "extracted_tables"
+    upload_directory_to_s3(str(images_local_folder), s3_prefix_images, bucket_name=s3_bucket)
+    upload_directory_to_s3(str(tables_local_folder), s3_prefix_tables, bucket_name=s3_bucket)
+
+    # Step 4: Upload Markdown to S3
+    markdown_s3_key = f'{s3_prefix_text}/{job_name}.md'
+    upload_file_to_s3(str(markdown_path), markdown_s3_key, bucket_name=s3_bucket)
+
+    return markdown_path
+
+
 def get_job_name():
     return uuid.uuid4()
+
 
 def clean_temp_files():
     shutil.rmtree(base_dir, ignore_errors=True)
     os.makedirs(base_dir, exist_ok=True)
     os.makedirs(output, exist_ok=True)
-
