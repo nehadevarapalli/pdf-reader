@@ -3,7 +3,7 @@ import requests
 import os
 
 # Configuration
-FASTAPI_URL = os.getenv('FASTAPI_URL', 'https://nehadevarapalli-doc-parser.hf.space/')
+FASTAPI_URL = os.getenv('FASTAPI_URL', 'https://nehadevarapalli-parseforge.hf.space')
 
 st.title('PDF/Webpage Processor')
 
