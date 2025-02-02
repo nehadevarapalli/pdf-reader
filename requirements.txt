@@ -1,4 +1,3 @@
-awscli
 beautifulsoup4==4.12.3
 boto3==1.36.10
 docling==2.17.0
@@ -11,5 +10,4 @@ Pillow
 pydantic
 pymupdf
 Requests
-streamlit
 typer
