@@ -10,4 +10,5 @@ Pillow
 pydantic
 pymupdf
 Requests
+streamlit
 typer
