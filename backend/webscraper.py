@@ -6,11 +6,16 @@ import pandas as pd
 import requests
 from bs4 import BeautifulSoup, ResultSet
 
+BUCKET_URL_PREFIX = os.getenv('BUCKET_URL')
+NAMESPACES_URL = BUCKET_URL_PREFIX + 'html/html-parser/'
+IMAGES_URL_PREFIX = NAMESPACES_URL+"extracted-images/"
+TABLES_URL_PREFIX = NAMESPACES_URL+"extracted-tables/"
 
 class WebScraper:
 
-    def __init__(self, url: str, job_name: str):
+    def __init__(self, url: str, job_name: str, embed_images: bool = True):
         self.url = url
+        self.embed_images = embed_images
         self.job_name = job_name
         webpage = self.get_webpage()
         self.soup = BeautifulSoup(webpage, 'lxml')
@@ -32,12 +37,11 @@ class WebScraper:
         :return: {image_count: int, table_count: int, home: Path}
         """
         html_path = self.HTML_HOME / f'{self.job_name}.html'
-        with open(html_path, 'w') as file:
-            file.write(str(self.soup))
         tables, images = self.soup.find_all('table'), self.soup.find_all('img')
         self.extract_modify_tables(tables)
         self.extract_modify_images(images)
-
+        with open(html_path, 'w') as file:
+            file.write(str(self.soup))
         return self.file_outputs
 
     def get_webpage(self):
@@ -55,9 +59,10 @@ class WebScraper:
             self.file_outputs['image_count'] += 1
             with open(file_path, 'wb') as handler:
                 handler.write(img_data)
-            # new_tag = self.soup.new_tag("p")
-            # new_tag.string = f'![Image {image_count}]({file_path})'
-            # image.replace_with(new_tag)
+            if self.embed_images:
+                new_tag = self.soup.new_tag("p")
+                new_tag.string = f'![Image {image_count}]({IMAGES_URL_PREFIX}{self.job_name}-img{image_count}.jpg)\n'
+                image.replace_with(new_tag)
 
     def extract_modify_tables(self, tables: ResultSet):
         for table_count, table in enumerate(tables):
