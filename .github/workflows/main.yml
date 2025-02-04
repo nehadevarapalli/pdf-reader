@@ -17,4 +17,4 @@ jobs:
       - name: Push to hub
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: git push https://nehadevarapalli:$HF_TOKEN@huggingface.co/spaces/nehadevarapalli/ParseForge hf
+        run: git push https://nehadevarapalli:$HF_TOKEN@huggingface.co/spaces/nehadevarapalli/ParseForge main
