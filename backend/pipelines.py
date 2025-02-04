@@ -28,7 +28,7 @@ def html_to_md_docling(url: str, job_name: uuid):
     html_path = output / 'html' / f'{job_name}.html'
 
     # Step 2: Upload input HTML to S3
-    input_html_s3_key = f'{s3_html_input_prefix}/{job_name}.pdf'
+    input_html_s3_key = f'{s3_html_input_prefix}/{job_name}.html'
     upload_file_to_s3(str(html_path), input_html_s3_key, bucket_name=s3_bucket)
 
     # Step 3: Upload images and tables to S3
