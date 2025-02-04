@@ -5,7 +5,7 @@ import os
 # Configuration
 FASTAPI_URL = os.getenv('FASTAPI_URL', 'https://nehadevarapalli-parseforge.hf.space')
 APP_NAME = "ParseForge"
-APP_DESCRIPTION = """📄🌐 A versatile document processing tool that converts PDFs and webpages into structured markdown content and extracts all metadata. 
+APP_DESCRIPTION = """📄🌐 A versatile document processing tool that converts PDFs and webpages into structured markdown content and extracts all data. 
 Choose between our **custom Python parser** (built with PyMuPDF, Docling, and BeautifulSoup) or the **enterprise-grade Llama parser** for comparison."""
 
 st.set_page_config(page_title=APP_NAME, page_icon="⚙️", layout="centered")
@@ -29,7 +29,7 @@ with parser_col:
     parser_type = st.selectbox(
         "Choose Parser Engine:",
         ["Python Parser", "Llama Parser"],
-        index=0,  # Force default selection
+        index=0,  # Default selection
         format_func=lambda x: "Select Parser" if x == "" else x,
         help="""Python Parser: Custom-built using PyMuPDF (image extraction), Docling (text & table extraction), 
 BeautifulSoup (webpage parsing). Optimized for specific use cases.\nLlama Parser: AI-powered enterprise solution for superior accuracy.""",
@@ -43,26 +43,67 @@ if "PDF" in input_type:
 else:
     url_input = st.text_input("Enter Webpage URL: ",
                                 placeholder="https://example.com",
-                                help="Paste a webpage URL to process. Extracts text, and metadata.")
+                                help="Paste a webpage URL to process. Extracts text, tables, and images.")
 
 st.divider()
 
+# Output options
+st.subheader("🔧 Output Options")
+output_col1, output_col2 = st.columns([1, 1])
+
+with output_col1:
+    output_formats = st.multiselect(
+        "Select components to include:",
+        options=["Markdown", "Images", "Tables"],
+        default=["Markdown"],
+        help="Choose which components to include in your output."
+    )
+
+with output_col2:
+    bundle_files = st.checkbox(
+        "📦 Bundle selected components in ZIP",
+        value=True,
+        help="Combine all selected formats into a single downloadable archive"
+    )
+
+if not bundle_files and (len(output_formats) > 1):
+    st.warning("⚠️ Multiple components require bundling to download!")
+    st.stop()
+
 # Process Button
 if st.button("✨ Process Content", type="primary", use_container_width=True):
+    params = {
+        "include_markdown": "Markdown" in output_formats,
+        "include_images": "Images" in output_formats,
+        "include_tables": "Tables" in output_formats,
+        "bundle": bundle_files
+    }
+
     if "PDF" in input_type and uploaded_file:
         with st.spinner("🔍 Parsing PDF content..."):
             response = requests.post(
                 f"{FASTAPI_URL}/processpdf/",
                 files={"file": (uploaded_file.name, uploaded_file, "application/pdf")},
-                params={"parser": parser_type.lower().replace(" ", "_")}
+                params=params
             )
 
         if response.status_code == 200:
-            success_msg = st.success("✅ PDF processed successfully!"),
-            dt_button = st.download_button(label="⬇️ Download Markdown",
-                               data=response.content,
-                               file_name=f"{uploaded_file.name}.md",
-                               mime="text/markdown")
+            if bundle_files:
+                sucess_msg = st.success("✅ All components bundled successfully!")
+                st.download_button (
+                    label="⬇️ Download ZIP Archive",
+                    data=response.content,
+                    file_name=f"{uploaded_file.name}_bundle.zip",
+                    mime="application/zip"
+                )
+            else:
+                success_msg = st.success("✅ PDF processed successfully!"),
+                st.download_button(
+                    label="⬇️ Download Markdown",
+                    data=response.content,
+                    file_name=f"{uploaded_file.name}.md",
+                    mime="text/markdown"
+                )
         else:
             st.error(f"❌ Processing failed: {response.text}")
         
@@ -71,15 +112,26 @@ if st.button("✨ Process Content", type="primary", use_container_width=True):
             response = requests.post(
                 f"{FASTAPI_URL}/processurl/",
                 json={"url": url_input},
-                params={"parser": parser_type.lower().replace(" ", "_")}
+                params=params
             )
             
         if response.status_code == 200:
-            st.success("✅ Webpage processed successfully!")
-            st.download_button(label="⬇️ Download Markdown",
-                                data=response.content,
-                                file_name="webpage.md",
-                                mime="text/markdown")
+            if bundle_files:
+                success_msg = st.success("✅ All components bundled successfully!")
+                st.download_button(
+                    label="⬇️ Download ZIP Archive",
+                    data=response.content,
+                    file_name="webpage_bundle.zip",
+                    mime="application/zip"
+                )
+            else:
+                success_msg = st.success("✅ Webpage processed successfully!")
+                st.download_button(
+                    label="⬇️ Download Markdown",
+                    data=response.content,
+                    file_name="webpage.md",
+                    mime="text/markdown"
+                )
         else:
             st.error(f"❌ Processing failed: {response.text}")
     
@@ -106,5 +158,4 @@ with st.expander("ℹ️ About ParseForge Features"):
     - **Output Options:**
       - Clean Markdown formatting
       - Preserved document structure
-      - Metadata extraction
     """)
