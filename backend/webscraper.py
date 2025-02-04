@@ -6,7 +6,7 @@ import pandas as pd
 import requests
 from bs4 import BeautifulSoup, ResultSet
 
-BUCKET_URL_PREFIX = os.getenv('BUCKET_URL')
+BUCKET_URL_PREFIX = os.getenv('BUCKET_URL', 'https://neu-pdf-webpage-parser.s3.amazonaws.com/')
 NAMESPACES_URL = BUCKET_URL_PREFIX + 'html/html-parser/'
 IMAGES_URL_PREFIX = NAMESPACES_URL+"extracted-images/"
 TABLES_URL_PREFIX = NAMESPACES_URL+"extracted-tables/"
@@ -74,4 +74,4 @@ class WebScraper:
 
 
 if __name__ == '__main__':
-    modified_html = WebScraper('https://www.crummy.com/software/BeautifulSoup/bs4/doc/', 'bs4docs').extract_all()
+    modified_html = WebScraper('https://ds4sd.github.io/docling/', 'bs4docs').extract_all()

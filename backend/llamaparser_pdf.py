@@ -6,7 +6,9 @@ from pathlib import Path
 
 import fitz
 from llama_parse import LlamaParse
+import nest_asyncio
 
+nest_asyncio.apply()
 output_folder = Path("./temp_processing/output/pdf")
 
 
@@ -131,7 +133,7 @@ def llama_parse_pdf(pdf_path: str, job_name: str):
             logging.error(f"Error extracting images with PyMuPDF: {e}")
 
     # Save extracted content to a Markdown file
-    md_file_path = markdown_folder / f'${job_name}.md'
+    md_file_path = markdown_folder / f'{job_name}.md'
     with open(md_file_path, "w", encoding="utf-8") as f:
         f.writelines(markdown_output)
 
