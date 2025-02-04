@@ -14,16 +14,20 @@ from pipelines import standardize_docling, standardize_markitdown, html_to_md_do
 load_dotenv('../.env')
 app = FastAPI()
 
+class URLRequest(BaseModel):
+    url: str
+
 @app.post("/processurl/", status_code=status.HTTP_200_OK)
 async def process_url(
     background_tasks: BackgroundTasks,
-    url: str, 
+    request: URLRequest,
     include_markdown: bool = Query(False),
     include_images: bool = Query(False),
     include_tables: bool = Query(False),
     bundle: bool = Query(False)
 ):
     try:
+        url = request.url
         job_name = get_job_name()
         result = html_to_md_docling(url, job_name)
         background_tasks.add_task(my_background_task)
@@ -33,16 +37,25 @@ async def process_url(
             zip_buffer = BytesIO()
             with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
                 # Markdown
-                if include_markdown and result['markdown']:
+                if include_markdown:
+                    if not any(os.scandir(result['markdown'])):
+                        raise HTTPException(status_code=500, detail="Markdown couldn't be generated. Maybe webpage has no data.")
+
                     zip_file.write(result['markdown'], arcname="document.md")
 
                 # Images
-                if include_images and result['images']:
+                if include_images:
+                    if not any(os.scandir(result['images'])):
+                        raise HTTPException(status_code=500, detail="No images found in the input webpage.")
+
                     for img in result['images'].iterdir():
                         zip_file.write(img, arcname=f"images/{img.name}")
 
                 # Tables
-                if include_tables and result['tables']:
+                if include_tables:
+                    if not any(os.scandir(result['tables'])):
+                        raise HTTPException(status_code=500, detail="No tables found in the input webpage.")
+                        
                     for table in result['tables'].iterdir():
                         zip_file.write(table, arcname=f"tables/{table.name}")
 
@@ -53,7 +66,7 @@ async def process_url(
                 headers={"Content-Disposition" : f"attachment; filename={job_name}.zip"}
             )
         else:
-            if not include_markdown:
+            if not include_markdown and not bundle:
                 raise HTTPException(status_code=400, detail="Only markdown output is supported for a non-bundled output")
             return FileResponse(
                 result['markdown'],
@@ -96,16 +109,25 @@ async def process_pdf(
             zip_buffer = BytesIO()
             with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
                 # Markdown
-                if include_markdown and result['markdown']:
+                if include_markdown:
+                    if not any(os.scandir(result['markdown'])):
+                        raise HTTPException(status_code=500, detail="Markdown couldn't be generated. Maybe PDF has no data.")
+
                     zip_file.write(result['markdown'], arcname="document.md")
 
                 # Images
-                if include_images and result['images']:
+                if include_images:
+                    if not any(os.scandir(result['images'])):
+                        raise HTTPException(status_code=500, detail="No images found in the input PDF.")
+
                     for img in result['images'].iterdir():
                         zip_file.write(img, arcname=f"images/{img.name}")
 
                 # Tables
-                if include_tables and result['tables']:
+                if include_tables:
+                    if not any(os.scandir(result['tables'])):
+                        raise HTTPException(status_code=500, detail="No tables found in the input PDF.")
+
                     for table in result['tables'].iterdir():
                         zip_file.write(table, arcname=f"tables/{table.name}")
 
@@ -116,7 +138,7 @@ async def process_pdf(
                 headers={"Content-Disposition" : f"attachment; filename={job_name}.zip"}
             )
         else:
-            if not include_markdown:
+            if not include_markdown and not bundle:
                 raise HTTPException(status_code=400, detail="Only markdown output is supported for a non-bundled output")
 
             return FileResponse(

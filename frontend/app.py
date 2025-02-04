@@ -60,24 +60,41 @@ with output_col1:
     )
 
 with output_col2:
+    bundle_required = len(output_formats) > 1 or "Markdown" not in output_formats
+
+    if bundle_required:
+        st.session_state.bundle_files = True
+
     bundle_files = st.checkbox(
-        "📦 Bundle selected components in ZIP",
-        value=True,
-        help="Combine all selected formats into a single downloadable archive"
+        "📦 Bundle all selected formats in a ZIP file",
+        value=st.session_state.get("bundle_files", True),
+        disabled=bundle_required,
+        help="Bundling is required when selecting multiple components or non-Markdown items",
+        key="bundle_files"
     )
 
-if not bundle_files and (len(output_formats) > 1):
-    st.warning("⚠️ Multiple components require bundling to download!")
-    st.stop()
+process_disabled = len(output_formats) == 0 or ("PDF" in input_type and not uploaded_file) or ("Webpage" in input_type and not url_input)
+
+if process_disabled and len(output_formats) == 0:
+    st.caption("ℹ️ Please select at least one output component to enable processing.")
+if process_disabled and ("PDF" in input_type and not uploaded_file or "Webpage" in input_type and not url_input):
+    st.caption("ℹ️ Please provide a valid input to enable processing.")
+
+if bundle_required and not bundle_files:
+    st.caption("ℹ️ Bundling is required for selected components.")
 
 # Process Button
-if st.button("✨ Process Content", type="primary", use_container_width=True):
+if st.button("✨ Process Content", type="primary", use_container_width=True, disabled=process_disabled):
     params = {
         "include_markdown": "Markdown" in output_formats,
         "include_images": "Images" in output_formats,
         "include_tables": "Tables" in output_formats,
         "bundle": bundle_files
     }
+
+    if not bundle_files and "Markdown" not in output_formats:
+        st.warning("⚠️ Markdown is required for non-bundled output!")
+        st.stop()
 
     if "PDF" in input_type and uploaded_file:
         with st.spinner("🔍 Parsing PDF content..."):
