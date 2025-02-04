@@ -6,10 +6,10 @@ from fastapi import FastAPI, UploadFile, HTTPException, status, BackgroundTasks
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
-from pipelines import standardize_docling, standardize_markitdown, html_to_md_docling, get_job_name, \
+from pipelines import pdf_to_md_enterprise, standardize_docling, standardize_markitdown, html_to_md_docling, get_job_name, \
     pdf_to_md_docling, clean_temp_files
 
-load_dotenv('../.env')
+load_dotenv()
 app = FastAPI()
 
 
@@ -94,7 +94,26 @@ async def standardizemarkitdown(file: UploadFile, background_tasks: BackgroundTa
         await file.close()
     return FileResponse(standardized_output, media_type='application/octet-stream', filename=f'{file.filename}.md')
 
-
+@app.post('/processpdfenterprise/', status_code=status.HTTP_200_OK)
+async def process_pdf_enterprise(file: UploadFile, background_tasks: BackgroundTasks):
+    if file.content_type != 'application/pdf':
+        raise HTTPException(status_code=400, detail="File must be a PDF")
+    background_tasks.add_task(my_background_task)
+    contents = await file.read()
+    output = Path("./temp_processing/output/pdf")
+    os.makedirs(output, exist_ok=True)
+    job_name = get_job_name()
+    try:
+        file_path = output / f'{job_name}.pdf'
+        with open(file_path, 'wb') as f:
+            f.write(contents)
+            await file.close()
+        markdown_output = pdf_to_md_enterprise(file_path, job_name)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        await file.close()
+    return FileResponse(markdown_output, media_type='application/octet-stream', filename=f'{file.filename}.md')
 def my_background_task():
     clean_temp_files()
     print("Performed cleanup of temp files.")
