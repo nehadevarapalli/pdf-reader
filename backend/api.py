@@ -38,7 +38,7 @@ async def process_url(
             with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
                 # Markdown
                 if include_markdown:
-                    if not any(os.scandir(result['markdown'])):
+                    if not os.path.exists(result['markdown']):
                         raise HTTPException(status_code=500, detail="Markdown couldn't be generated. Maybe webpage has no data.")
 
                     zip_file.write(result['markdown'], arcname="document.md")
@@ -110,7 +110,7 @@ async def process_pdf(
             with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
                 # Markdown
                 if include_markdown:
-                    if not any(os.scandir(result['markdown'])):
+                    if not os.path.exists(result['markdown']):
                         raise HTTPException(status_code=500, detail="Markdown couldn't be generated. Maybe PDF has no data.")
 
                     zip_file.write(result['markdown'], arcname="document.md")
