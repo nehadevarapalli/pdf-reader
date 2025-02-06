@@ -1,6 +1,9 @@
+import os
+from io import BytesIO
+from zipfile import ZipFile
+
 import streamlit as st
 import requests
-import os
 
 # Configuration
 FASTAPI_URL = os.getenv('FASTAPI_URL', 'https://nehadevarapalli-parseforge.hf.space')
@@ -28,13 +31,14 @@ with input_col:
 with parser_col:
     parser_type = st.selectbox(
         "Choose Parser Engine:",
-        ["Python Parser", "Llama Parser"],
+        ["Python Parser", "Llama Parser", "Standardize Docling", "Standardize MarkItDown"],
         index=0,  # Default selection
         format_func=lambda x: "Select Parser" if x == "" else x,
         help="""Python Parser: Custom-built using PyMuPDF (image extraction), Docling (text & table extraction), 
-BeautifulSoup (webpage parsing). Optimized for specific use cases.\nLlama Parser: AI-powered enterprise solution for superior accuracy.""",
+BeautifulSoup (webpage parsing). Optimized for specific use cases.\nLlama Parser: AI-powered enterprise solution for superior accuracy.\n Standardize Docling: Standardize document using Docling.\nStandardize MarkItDown: Standardize document using MarkItDown.""",
         disabled=False
     )
+
 # File/URL Input Section
 if "PDF" in input_type:
     uploaded_file = st.file_uploader("Upload PDF",
@@ -48,113 +52,106 @@ else:
 st.divider()
 
 # Output options
-st.subheader("🔧 Output Options")
-output_col1, output_col2 = st.columns([1, 1])
+if parser_type not in ["Standardize Docling", "Standardize MarkItDown"]:
+    st.subheader("🔧 Output Options")
+    output_col = st.columns([1])[0]
 
-with output_col1:
-    output_formats = st.multiselect(
-        "Select components to include:",
-        options=["Markdown", "Images", "Tables"],
-        default=["Markdown"],
-        help="Choose which components to include in your output."
-    )
+    with output_col:
+        output_formats = st.multiselect(
+            "Select components to include:",
+            options=["Markdown", "Images", "Tables"],
+            default=["Markdown"],
+            help="Choose which components to include in your output."
+        )
 
-with output_col2:
-    bundle_required = len(output_formats) > 1 or "Markdown" not in output_formats
+    process_disabled = len(output_formats) == 0 or ("PDF" in input_type and not uploaded_file) or ("Webpage" in input_type and not url_input)
 
-    if bundle_required:
-        st.session_state.bundle_files = True
-
-    bundle_files = st.checkbox(
-        "📦 Bundle all selected formats in a ZIP file",
-        value=st.session_state.get("bundle_files", True),
-        disabled=bundle_required,
-        help="Bundling is required when selecting multiple components or non-Markdown items",
-        key="bundle_files"
-    )
-
-process_disabled = len(output_formats) == 0 or ("PDF" in input_type and not uploaded_file) or ("Webpage" in input_type and not url_input)
-
-if process_disabled and len(output_formats) == 0:
-    st.caption("ℹ️ Please select at least one output component to enable processing.")
-if process_disabled and ("PDF" in input_type and not uploaded_file or "Webpage" in input_type and not url_input):
-    st.caption("ℹ️ Please provide a valid input to enable processing.")
-
-if bundle_required and not bundle_files:
-    st.caption("ℹ️ Bundling is required for selected components.")
+    if process_disabled and len(output_formats) == 0:
+        st.caption("ℹ️ Please select at least one output component to enable processing.")
+    if process_disabled and ("PDF" in input_type and not uploaded_file or "Webpage" in input_type and not url_input):
+        st.caption("ℹ️ Please provide a valid input to enable processing.")
+else:
+    process_disabled = ("PDF" in input_type and not uploaded_file) or ("Webpage" in input_type and not url_input)
 
 # Process Button
 if st.button("✨ Process Content", type="primary", use_container_width=True, disabled=process_disabled):
-    params = {
-        "include_markdown": "Markdown" in output_formats,
-        "include_images": "Images" in output_formats,
-        "include_tables": "Tables" in output_formats,
-        "bundle": bundle_files
-    }
-
-    if not bundle_files and "Markdown" not in output_formats:
-        st.warning("⚠️ Markdown is required for non-bundled output!")
-        st.stop()
-
-    if "PDF" in input_type and uploaded_file:
-        with st.spinner("🔍 Parsing PDF content..."):
-            response = requests.post(
-                f"{FASTAPI_URL}/processpdf/",
-                files={"file": (uploaded_file.name, uploaded_file, "application/pdf")},
-                params=params
-            )
-
-        if response.status_code == 200:
-            if bundle_files:
-                sucess_msg = st.success("✅ All components bundled successfully!")
-                st.download_button (
-                    label="⬇️ Download ZIP Archive",
-                    data=response.content,
-                    file_name=f"{uploaded_file.name}_bundle.zip",
-                    mime="application/zip"
-                )
-            else:
-                success_msg = st.success("✅ PDF processed successfully!"),
-                st.download_button(
-                    label="⬇️ Download Markdown",
-                    data=response.content,
-                    file_name=f"{uploaded_file.name}.md",
-                    mime="text/markdown"
+    if parser_type in ["Standardize Docling", "Standardize MarkItDown"]:
+        if "PDF" in input_type and uploaded_file:
+            endpoint = "/standardizedoclingpdf/" if parser_type == "Standardize Docling" else "/standardizemarkitdownpdf/"
+            with st.spinner("🔍 Standardizing PDF content..."):
+                response = requests.post(
+                    f"{FASTAPI_URL}{endpoint}",
+                    files={"file": (uploaded_file.name, uploaded_file, "application/pdf")}
                 )
         else:
-            st.error(f"❌ Processing failed: {response.text}")
-        
-    elif "Webpage" in input_type and url_input:
-        with st.spinner("🌐 Analyzing webpage content..."):
-            response = requests.post(
-                f"{FASTAPI_URL}/processurl/",
-                json={"url": url_input},
-                params=params
-            )
-            
-        if response.status_code == 200:
-            if bundle_files:
-                success_msg = st.success("✅ All components bundled successfully!")
-                st.download_button(
-                    label="⬇️ Download ZIP Archive",
-                    data=response.content,
-                    file_name="webpage_bundle.zip",
-                    mime="application/zip"
+            endpoint = "/standardizedoclingurl/" if parser_type == "Standardize Docling" else "/standardizemarkitdownurl/"
+            with st.spinner("🌐 Standardizing webpage content..."):
+                response = requests.post(
+                    f"{FASTAPI_URL}{endpoint}",
+                    json={"url": url_input}
                 )
-            else:
-                success_msg = st.success("✅ Webpage processed successfully!")
-                st.download_button(
-                    label="⬇️ Download Markdown",
-                    data=response.content,
-                    file_name="webpage.md",
-                    mime="text/markdown"
+
+        if response.status_code == 200:
+            st.success("✅ Standardization completed successfully!")
+            st.download_button(
+                label="⬇️ Download Standardized Document",
+                data=response.content,
+                file_name=f"{uploaded_file.name}.md" if "PDF" in input_type else "webpage.md",
+                mime="text/markdown"
+            )
+        else:
+            st.error(f"❌ Error: {response.status_code} - {response.text}")
+    else:  
+        params = {
+            "include_markdown": "Markdown" in output_formats,
+            "include_images": "Images" in output_formats,
+            "include_tables": "Tables" in output_formats,
+        }
+
+        if "PDF" in input_type and uploaded_file:
+            with st.spinner("🔍 Parsing PDF content..."):
+                response = requests.post(
+                    f"{FASTAPI_URL}/processpdf/",
+                    files={"file": (uploaded_file.name, uploaded_file, "application/pdf")},
+                    params=params
                 )
         else:
-            st.error(f"❌ Processing failed: {response.text}")
+            with st.spinner("🌐 Analyzing webpage content..."):
+                response = requests.post(
+                    f"{FASTAPI_URL}/processurl/",
+                    json={"url": url_input},
+                    params=params
+                )
+
+        if response.status_code == 200:
+            content_disposition = response.headers.get("Content-Disposition")
+            if "attachment; filename=" in content_disposition:
+                filename = content_disposition.split("filename=")[1]
+                if filename.endswith(".zip"):
+                    zip_buffer = BytesIO(response.content)
+                    with ZipFile(zip_buffer, 'r') as zip_file:
+                        for file_info in zip_file.infolist():
+                            with zip_file.open(file_info) as file:
+                                st.success("✅ All components processed successfully!")
+                                st.download_button(
+                                    label="⬇️ Download ZIP Archive",
+                                    data=file.read,
+                                    file_name=file_info.filename,
+                                    mime="application/zip"
+                                )
+                else:
+                    st.success("✅ Markdown processed successfully!")
+                    st.download_button(
+                        label="⬇️ Download Markdown",
+                        data=response.content,
+                        file_name=f"{uploaded_file.name}.md",
+                        mime="text/markdown"
+                    )
+            else:
+                st.error("Unexpected response format. Please try again.")
+        else:
+            st.error(f"❌ Error: {response.status_code} - {response.text}")
     
-    else:
-        st.warning("⚠️ Please provide a valid input first!")
-
 # Feature Explanation
 with st.expander("ℹ️ About ParseForge Features"):
     st.markdown("""
@@ -169,6 +166,11 @@ with st.expander("ℹ️ About ParseForge Features"):
     - **Llama Parser** *(Enterprise Option)*:
       - AI-powered solution offering superior accuracy for complex layouts.
       - Ideal for enterprise use cases where advanced document understanding is required.
+    - **Standardization Options:**
+        - **Standardize Docling:** 
+            - Standardize document structure using Docling.
+        - **Standardize MarkItDown:** 
+            - Standardize document structure using MarkItDown.
     - **Multi-Format Support:**
       - PDF documents (scanned & digital)
       - Webpages (articles, blogs, documentation)
