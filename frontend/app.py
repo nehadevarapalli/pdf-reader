@@ -128,17 +128,13 @@ if st.button("✨ Process Content", type="primary", use_container_width=True, di
             if "attachment; filename=" in content_disposition:
                 filename = content_disposition.split("filename=")[1]
                 if filename.endswith(".zip"):
-                    zip_buffer = BytesIO(response.content)
-                    with ZipFile(zip_buffer, 'r') as zip_file:
-                        for file_info in zip_file.infolist():
-                            with zip_file.open(file_info) as file:
-                                st.success("✅ All components processed successfully!")
-                                st.download_button(
-                                    label="⬇️ Download ZIP Archive",
-                                    data=file.read,
-                                    file_name=file_info.filename,
-                                    mime="application/zip"
-                                )
+                    st.success("✅ All components processed successfully!")
+                    st.download_button(
+                        label="⬇️ Download ZIP Archive",
+                        data=response.content,
+                        file_name=filename,
+                        mime="application/zip"
+                    )
                 else:
                     st.success("✅ Markdown processed successfully!")
                     st.download_button(
