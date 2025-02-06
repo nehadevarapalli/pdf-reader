@@ -4,8 +4,10 @@ from zipfile import ZipFile
 
 import streamlit as st
 import requests
+from dotenv import load_dotenv
 
 # Configuration
+load_dotenv()
 FASTAPI_URL = os.getenv('FASTAPI_URL', 'https://nehadevarapalli-parseforge.hf.space')
 APP_NAME = "ParseForge"
 APP_DESCRIPTION = """📄🌐 A versatile document processing tool that converts PDFs and webpages into structured markdown content and extracts all data. 

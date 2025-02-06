@@ -45,12 +45,15 @@ async def process_url(
 
         if include_images or include_tables:  # images or tables are requested
             flag, zip_buffer, messages = create_zip_archive(result, include_markdown, include_images, include_tables)
-            return StreamingResponse(
+            if flag:
+                return StreamingResponse(
                     zip_buffer,
                     media_type="application/zip",
                     headers={
                         "Content-Disposition": f"attachment; filename={job_name}.zip"
-                    }) if flag else HTTPException(status_code=500, detail=messages)
+                    })
+            else:
+                raise HTTPException(status_code=500, detail=messages)
         else:
             if not result["markdown"]:
                 raise HTTPException(
@@ -67,7 +70,7 @@ async def process_url(
             )
 
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/processpdf/", status_code=status.HTTP_200_OK)
@@ -103,17 +106,17 @@ async def process_pdf(
         if include_images or include_tables:  # images or tables are requested
             flag, zip_buffer, messages = create_zip_archive(result, include_markdown, include_images,
                                                             include_tables)
-            return (
-                StreamingResponse(
+            if flag:
+                return StreamingResponse(
                     zip_buffer,
                     media_type="application/zip",
                     headers={
                         "Content-Disposition": f"attachment; filename={job_name}.zip"
                     },
                 )
-                if flag
-                else HTTPException(status_code=500, detail=messages)
-            )
+            else:
+                raise HTTPException(status_code=500, detail=messages)
+
         else:
             if not result["markdown"] or not os.path.exists(result["markdown"]):
                 raise HTTPException(
