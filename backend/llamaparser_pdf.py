@@ -6,14 +6,14 @@ from pathlib import Path
 
 import fitz
 from llama_parse import LlamaParse
+import nest_asyncio
 
+nest_asyncio.apply()
 output_folder = Path("./temp_processing/output/pdf")
 
 
 def llama_parse_pdf(pdf_path: str, job_name: str):
     logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
-    # load_dotenv() # already loaded in api.py
-    # Get API key from environment variables
     LLAMA_API_KEY = os.getenv('LLAMAPARSE_API_KEY')
 
     # Validate environment variables

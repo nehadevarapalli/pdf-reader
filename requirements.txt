@@ -5,10 +5,13 @@ fastapi[standard]
 llama_parse==0.5.20
 markitdown==0.0.1a3
 pandas==2.2.3
-pydantic==2.10.6
+Pillow
 pymupdf
 python-dotenv==1.0.1
 python-multipart
 Requests
-streamlit==1.42.0
+streamlit
+pathlib~=1.0.1
+python-dotenv~=1.0.1
+llama-parse~=0.5.20
 uvicorn
