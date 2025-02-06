@@ -74,4 +74,4 @@ class WebScraper:
 
 
 if __name__ == '__main__':
-    modified_html = WebScraper('https://ds4sd.github.io/docling/', 'bs4docs').extract_all()
+    modified_html = WebScraper('https://www.crummy.com/software/BeautifulSoup/bs4/doc/', 'bs4docs').extract_all()

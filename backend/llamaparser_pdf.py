@@ -14,8 +14,6 @@ output_folder = Path("./temp_processing/output/pdf")
 
 def llama_parse_pdf(pdf_path: str, job_name: str):
     logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
-    # load_dotenv() # already loaded in api.py
-    # Get API key from environment variables
     LLAMA_API_KEY = os.getenv('LLAMAPARSE_API_KEY')
 
     # Validate environment variables
@@ -133,7 +131,7 @@ def llama_parse_pdf(pdf_path: str, job_name: str):
             logging.error(f"Error extracting images with PyMuPDF: {e}")
 
     # Save extracted content to a Markdown file
-    md_file_path = markdown_folder / f'{job_name}.md'
+    md_file_path = markdown_folder / f'${job_name}.md'
     with open(md_file_path, "w", encoding="utf-8") as f:
         f.writelines(markdown_output)
 
