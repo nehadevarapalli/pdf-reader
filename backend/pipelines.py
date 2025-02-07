@@ -4,6 +4,7 @@ import uuid
 from pathlib import Path
 
 from docling.document_converter import DocumentConverter
+from dotenv import load_dotenv
 from markitdown import MarkItDown
 
 from cloud_ops import upload_file_to_s3, upload_directory_to_s3
@@ -198,24 +199,23 @@ def pdf_to_md_enterprise(file: Path, job_name: uuid):
     }
 
     markdown_path = llama_parse_pdf(str(file), job_name)
+    images_local_folder = output / "extracted_images"
+    tables_local_folder = output / "extracted_tables"
 
     # Step 1: Upload input PDF to S3
     input_pdf_s3_key = f'{s3_pdf_input_prefix}/{job_name}.pdf'
     upload_file_to_s3(str(file), input_pdf_s3_key, bucket_name=s3_bucket)
 
-    # Step 3: Upload images and tables to S3
-    images_local_folder = output / "extracted_images"
-    tables_local_folder = output / "extracted_tables"
-
+    # Step 2: Upload images and tables to S3
     if images_local_folder.exists() and any(images_local_folder.iterdir()):
-        output['images'] = images_local_folder
+        output_data['images'] = images_local_folder
         upload_directory_to_s3(str(images_local_folder), s3_prefix_images, bucket_name=s3_bucket)
 
     if tables_local_folder.exists() and any(tables_local_folder.iterdir()):
-        output['tables'] = tables_local_folder
+        output_data['tables'] = tables_local_folder
         upload_directory_to_s3(str(tables_local_folder), s3_prefix_tables, bucket_name=s3_bucket)
 
-    # Step 4: Upload Markdown to S3
+    # Step 3: Upload Markdown to S3
     if markdown_path.exists() and not is_file_empty(markdown_path):
         output_data['markdown'] = markdown_path
         markdown_s3_key = f'{s3_prefix_text}/{job_name}.md'
