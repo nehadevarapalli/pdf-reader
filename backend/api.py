@@ -137,10 +137,14 @@ async def process_pdf(
         await file.close()
 
 
-@app.post("/standardizedocling/", status_code=status.HTTP_200_OK)
-async def standardizedocling(file: UploadFile, background_tasks: BackgroundTasks):
+@app.post("/standardizedoclingpdf/", status_code=status.HTTP_200_OK)
+async def standardizedoclingpdf(
+    file: UploadFile, 
+    background_tasks: BackgroundTasks
+):
     if file.content_type != "application/pdf":
         raise HTTPException(status_code=400, detail="File must be a PDF")
+    
     background_tasks.add_task(my_background_task)
     contents = await file.read()
     output = Path("./temp_processing/output/pdf")
@@ -151,22 +155,53 @@ async def standardizedocling(file: UploadFile, background_tasks: BackgroundTasks
         with open(file_path, "wb") as f:
             f.write(contents)
             await file.close()
-        standardized_output = standardize_docling(file_path, job_name)
+        standardized_output = standardize_docling(str(file_path), job_name)
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        await file.close()
+
     return FileResponse(
         standardized_output,
         media_type="application/octet-stream",
         filename=f"{file.filename}.md",
     )
 
+@app.post("/standardizedoclingurl/", status_code=status.HTTP_200_OK)
+async def standardizedoclingurl(
+    request: URLRequest,
+    background_tasks: BackgroundTasks
+):
+    try:
+        url = request.url
+        job_name = get_job_name()
+        background_tasks.add_task(my_background_task)
 
-@app.post("/standardizemarkitdown/", status_code=status.HTTP_200_OK)
-async def standardizemarkitdown(file: UploadFile, background_tasks: BackgroundTasks):
+        standardized_output = standardize_docling(url, job_name)
+
+        if standardized_output == -1:
+            raise HTTPException(
+                status_code=500,
+                detail="Markdown couldn't be generated. Maybe webpage has no data.",
+            )
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+    return FileResponse(
+        standardized_output,
+        media_type="application/octet-stream",
+        filename=f"{job_name}.md",
+    )
+
+
+@app.post("/standardizemarkitdownpdf/", status_code=status.HTTP_200_OK)
+async def standardizemarkitdownpdf(
+    file: UploadFile, 
+    background_tasks: BackgroundTasks
+):
     if file.content_type != "application/pdf":
         raise HTTPException(status_code=400, detail="File must be a PDF")
+    
     background_tasks.add_task(my_background_task)
     contents = await file.read()
     output = Path("./temp_processing/output/pdf")
@@ -177,15 +212,42 @@ async def standardizemarkitdown(file: UploadFile, background_tasks: BackgroundTa
         with open(file_path, "wb") as f:
             f.write(contents)
             await file.close()
-        standardized_output = standardize_markitdown(file_path, job_name)
+        standardized_output = standardize_markitdown(str(file_path), job_name)
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        await file.close()
+
     return FileResponse(
         standardized_output,
         media_type="application/octet-stream",
         filename=f"{file.filename}.md",
+    )
+
+@app.post("/standardizemarkitdownurl/", status_code=status.HTTP_200_OK)
+async def standardizemarkitdownurl(
+    request: URLRequest,
+    background_tasks: BackgroundTasks
+):
+    try:
+        url = request.url
+        job_name = get_job_name()
+        background_tasks.add_task(my_background_task)
+
+        standardized_output = standardize_markitdown(url, job_name)
+
+        if standardized_output == -1:
+            raise HTTPException(
+                status_code=500,
+                detail="Markdown couldn't be generated. Maybe webpage has no data.",
+            )
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+    return FileResponse(
+        standardized_output,
+        media_type="application/octet-stream",
+        filename=f"{job_name}.md",
     )
 
 
