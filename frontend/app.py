@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 
 # Configuration
 load_dotenv()
-FASTAPI_URL = os.getenv('FASTAPI_URL', 'http://127.0.0.1:8000')
+FASTAPI_URL = os.getenv('FASTAPI_URL', 'https://nehadevarapalli-parseforge.hf.space')
 APP_NAME = "ParseForge"
 APP_DESCRIPTION = """📄🌐 A versatile document processing tool that converts PDFs and webpages into structured markdown content and extracts all data. 
 Choose between our **custom Python parser** (built with PyMuPDF, Docling, and BeautifulSoup) or the **enterprise-grade Llama parser (for PDFs) or Firecrawl (for Webpages)** for comparison."""
@@ -126,14 +126,14 @@ if st.button("✨ Process Content", type="primary", use_container_width=True, di
         
         if parser_type == "Llama Parser":
             with st.spinner("🔍 Parsing PDF content with Llama Parser..."):
-                process_content("/process_pdf_enterprise/", files={"file": (uploaded_file.name, uploaded_file, "application/pdf")})
+                process_content("/processpdfenterprise/", files={"file": (uploaded_file.name, uploaded_file, "application/pdf")}, params=params)
         elif parser_type == "Firecrawl":
             with st.spinner("🌐 Parsing webpage content with Firecrawl..."):
-                process_content("/processurl/", json={"url": url_input})
+                process_content("/processurlenterprise/", json={"url": url_input}, params=params)
         else:
             if "PDF" in input_type and uploaded_file:
                 with st.spinner("🔍 Parsing PDF content..."):
-                    process_content("/process_pdf/", files={"file": (uploaded_file.name, uploaded_file, "application/pdf")}, params=params)
+                    process_content("/processpdf/", files={"file": (uploaded_file.name, uploaded_file, "application/pdf")}, params=params)
             else:
                 with st.spinner("🌐 Analyzing webpage content..."):
                     process_content("/processurl/", json={"url": url_input}, params=params)
