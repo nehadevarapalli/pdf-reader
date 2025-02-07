@@ -1,7 +1,4 @@
 import os
-from io import BytesIO
-from zipfile import ZipFile
-
 import streamlit as st
 import requests
 from dotenv import load_dotenv
@@ -11,7 +8,7 @@ load_dotenv()
 FASTAPI_URL = os.getenv('FASTAPI_URL', 'https://nehadevarapalli-parseforge.hf.space')
 APP_NAME = "ParseForge"
 APP_DESCRIPTION = """📄🌐 A versatile document processing tool that converts PDFs and webpages into structured markdown content and extracts all data. 
-Choose between our **custom Python parser** (built with PyMuPDF, Docling, and BeautifulSoup) or the **enterprise-grade Llama parser** for comparison."""
+Choose between our **custom Python parser** (built with PyMuPDF, Docling, and BeautifulSoup) or the **enterprise-grade Llama parser (for PDFs) or Firecrawl (for Webpages)** for comparison."""
 
 st.set_page_config(page_title=APP_NAME, page_icon="⚙️", layout="centered")
 
@@ -30,14 +27,21 @@ with input_col:
                           ["📄 PDF File", "🌐 Webpage URL"],
                           horizontal=True)
 
+parser_options = ["Python Parser", "Standardize Docling", "Standardize MarkItDown"]
+if "PDF" in input_type:
+    parser_options.append("Llama Parser")
+else:
+    parser_options.append("Firecrawl")
+
 with parser_col:
     parser_type = st.selectbox(
         "Choose Parser Engine:",
-        ["Python Parser", "Llama Parser", "Standardize Docling", "Standardize MarkItDown"],
+        parser_options,
         index=0,  # Default selection
         format_func=lambda x: "Select Parser" if x == "" else x,
         help="""Python Parser: Custom-built using PyMuPDF (image extraction), Docling (text & table extraction), 
-BeautifulSoup (webpage parsing). Optimized for specific use cases.\nLlama Parser: AI-powered enterprise solution for superior accuracy.\n Standardize Docling: Standardize document using Docling.\nStandardize MarkItDown: Standardize document using MarkItDown.""",
+BeautifulSoup (webpage parsing). Optimized for specific use cases.\nLlama Parser: AI-powered enterprise solution for superior accuracy (use for PDFs).\n 
+Firecrawl: Advanced web scraping and parsing engine (use for webpages).\nStandardize Docling: Standardize document using Docling.\nStandardize MarkItDown: Standardize document using MarkItDown.""",
         disabled=False
     )
 
@@ -75,104 +79,91 @@ if parser_type not in ["Standardize Docling", "Standardize MarkItDown"]:
 else:
     process_disabled = ("PDF" in input_type and not uploaded_file) or ("Webpage" in input_type and not url_input)
 
+def process_content(endpoint, files=None, json=None, params=None):
+    response = requests.post(f"{FASTAPI_URL}{endpoint}", files=files, json=json, params=params)
+    if response.status_code == 200:
+        content_disposition = response.headers.get("Content-Disposition")
+        if content_disposition and "attachment; filename=" in content_disposition:
+            filename = content_disposition.split("filename=")[1]
+            if filename.endswith(".zip"):
+                st.success("✅ All components processed successfully!")
+                st.download_button(
+                    label="⬇️ Download ZIP Archive",
+                    data=response.content,
+                    file_name=filename,
+                    mime="application/zip"
+                )
+            else:
+                st.success("✅ Markdown processed successfully!")
+                st.download_button(
+                    label="⬇️ Download Markdown",
+                    data=response.content,
+                    file_name=f"{uploaded_file.name}.md",
+                    mime="text/markdown"
+                )
+        else:
+            st.error("Unexpected response format. Please try again.")
+    else:
+        st.error(f"❌ Error: {response.status_code} - {response.text}")
+
 # Process Button
 if st.button("✨ Process Content", type="primary", use_container_width=True, disabled=process_disabled):
     if parser_type in ["Standardize Docling", "Standardize MarkItDown"]:
         if "PDF" in input_type and uploaded_file:
             endpoint = "/standardizedoclingpdf/" if parser_type == "Standardize Docling" else "/standardizemarkitdownpdf/"
             with st.spinner("🔍 Standardizing PDF content..."):
-                response = requests.post(
-                    f"{FASTAPI_URL}{endpoint}",
-                    files={"file": (uploaded_file.name, uploaded_file, "application/pdf")}
-                )
+                process_content(endpoint, files={"file": {uploaded_file.name, uploaded_file, "application/pdf"}})
         else:
             endpoint = "/standardizedoclingurl/" if parser_type == "Standardize Docling" else "/standardizemarkitdownurl/"
             with st.spinner("🌐 Standardizing webpage content..."):
-                response = requests.post(
-                    f"{FASTAPI_URL}{endpoint}",
-                    json={"url": url_input}
-                )
-
-        if response.status_code == 200:
-            st.success("✅ Standardization completed successfully!")
-            st.download_button(
-                label="⬇️ Download Standardized Document",
-                data=response.content,
-                file_name=f"{uploaded_file.name}.md" if "PDF" in input_type else "webpage.md",
-                mime="text/markdown"
-            )
-        else:
-            st.error(f"❌ Error: {response.status_code} - {response.text}")
+                process_content(endpoint, json={"url": url_input})
     else:  
         params = {
             "include_markdown": "Markdown" in output_formats,
             "include_images": "Images" in output_formats,
             "include_tables": "Tables" in output_formats,
         }
-
-        if "PDF" in input_type and uploaded_file:
-            with st.spinner("🔍 Parsing PDF content..."):
-                response = requests.post(
-                    f"{FASTAPI_URL}/processpdf/",
-                    files={"file": (uploaded_file.name, uploaded_file, "application/pdf")},
-                    params=params
-                )
+        
+        if parser_type == "Llama Parser":
+            with st.spinner("🔍 Parsing PDF content with Llama Parser..."):
+                process_content("/processpdfenterprise/", files={"file": (uploaded_file.name, uploaded_file, "application/pdf")}, params=params)
+        elif parser_type == "Firecrawl":
+            with st.spinner("🌐 Parsing webpage content with Firecrawl..."):
+                process_content("/processurlenterprise/", json={"url": url_input}, params=params)
         else:
-            with st.spinner("🌐 Analyzing webpage content..."):
-                response = requests.post(
-                    f"{FASTAPI_URL}/processurl/",
-                    json={"url": url_input},
-                    params=params
-                )
-
-        if response.status_code == 200:
-            content_disposition = response.headers.get("Content-Disposition")
-            if "attachment; filename=" in content_disposition:
-                filename = content_disposition.split("filename=")[1]
-                if filename.endswith(".zip"):
-                    st.success("✅ All components processed successfully!")
-                    st.download_button(
-                        label="⬇️ Download ZIP Archive",
-                        data=response.content,
-                        file_name=filename,
-                        mime="application/zip"
-                    )
-                else:
-                    st.success("✅ Markdown processed successfully!")
-                    st.download_button(
-                        label="⬇️ Download Markdown",
-                        data=response.content,
-                        file_name=f"{uploaded_file.name}.md",
-                        mime="text/markdown"
-                    )
+            if "PDF" in input_type and uploaded_file:
+                with st.spinner("🔍 Parsing PDF content..."):
+                    process_content("/processpdf/", files={"file": (uploaded_file.name, uploaded_file, "application/pdf")}, params=params)
             else:
-                st.error("Unexpected response format. Please try again.")
-        else:
-            st.error(f"❌ Error: {response.status_code} - {response.text}")
+                with st.spinner("🌐 Analyzing webpage content..."):
+                    process_content("/processurl/", json={"url": url_input}, params=params)
     
 # Feature Explanation
 with st.expander("ℹ️ About ParseForge Features"):
     st.markdown("""
     **Key Features:**
     - **Custom Python Parser** *(Default Option)*:
-      - **PDF Parsing:** 
-        - Built using PyMuPDF for extracting images from PDFs.
-        - Uses Docling to extract text and tables with precision.
-      - **Webpage Parsing:** 
-        - Powered by BeautifulSoup for extracting structured content from webpages.
-        - Suitable for projects requiring lightweight, rule-based parsing.
-    - **Llama Parser** *(Enterprise Option)*:
-      - AI-powered solution offering superior accuracy for complex layouts.
-      - Ideal for enterprise use cases where advanced document understanding is required.
+        - **PDF Parsing:** 
+            - Built using PyMuPDF for extracting images from PDFs.
+            - Uses Docling to extract text and tables with precision.
+        - **Webpage Parsing:** 
+            - Powered by BeautifulSoup for extracting structured content from webpages.
+            - Suitable for projects requiring lightweight, rule-based parsing.
+    - **Llama Parser** *(Enterprise PDF Parsing)*:
+        - AI-powered solution offering superior accuracy for complex layouts.
+        - Ideal for enterprise use cases where advanced document understanding is required.
+    - **Firecrawl** *(Enterprise Webpage Parsing)*:
+        - Advanced web scraping engine for extracting structured content from webpages.
+        - Suitable for projects requiring advanced web scraping capabilities.
     - **Standardization Options:**
         - **Standardize Docling:** 
             - Standardize document structure using Docling.
         - **Standardize MarkItDown:** 
             - Standardize document structure using MarkItDown.
     - **Multi-Format Support:**
-      - PDF documents (scanned & digital)
-      - Webpages (articles, blogs, documentation)
+        - PDF documents (scanned & digital)
+        - Webpages (articles, blogs, documentation)
     - **Output Options:**
-      - Clean Markdown formatting
-      - Preserved document structure
+        - Clean Markdown formatting
+        - Preserved document structure
     """)
