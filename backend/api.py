@@ -15,7 +15,8 @@ from pipelines import (
     get_job_name,
     pdf_to_md_docling,
     clean_temp_files,
-    pdf_to_md_enterprise
+    pdf_to_md_enterprise,
+    html_to_md_enterprise
 )
 
 load_dotenv()
@@ -308,6 +309,54 @@ async def process_pdf_enterprise(
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         await file.close()
+
+
+@app.post("/processurlenterprise/", status_code=status.HTTP_200_OK)
+async def process_url_enterprise(
+        background_tasks: BackgroundTasks,
+        request: URLRequest,
+        include_markdown: bool = Query(False),
+        include_images: bool = Query(False),
+        include_tables: bool = Query(False),
+):
+    if not any([include_markdown, include_images, include_tables]):
+        raise HTTPException(
+            status_code=400, detail="At least one output type must be selected"
+        )
+    try:
+        url = request.url
+        job_name = get_job_name()
+        result = html_to_md_enterprise(url, job_name)
+        background_tasks.add_task(my_background_task)
+
+        if include_images or include_tables:  # images or tables are requested
+            flag, zip_buffer, messages = create_zip_archive(result, include_markdown, include_images, include_tables)
+            if flag:
+                return StreamingResponse(
+                    zip_buffer,
+                    media_type="application/zip",
+                    headers={
+                        "Content-Disposition": f"attachment; filename={job_name}.zip"
+                    })
+            else:
+                raise HTTPException(status_code=500, detail=messages)
+        else:
+            if not result["markdown"]:
+                raise HTTPException(
+                    status_code=500,
+                    detail="Markdown couldn't be generated. Maybe webpage has no data.",
+                )
+            return FileResponse(
+                result["markdown"],
+                media_type="application/octet-stream",
+                headers={
+                    "Content-Disposition": f"attachment; filename={job_name}.md"
+                },
+                filename=f"{job_name}.md",
+            )
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 def create_zip_archive(result, include_markdown, include_images, include_tables):

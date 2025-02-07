@@ -3,10 +3,12 @@ import shutil
 import uuid
 from pathlib import Path
 
+import requests
 from docling.document_converter import DocumentConverter
 from markitdown import MarkItDown
 
 from cloud_ops import upload_file_to_s3, upload_directory_to_s3
+from firecrawl_code import firecrawl
 from llamaparser_pdf import llama_parse_pdf
 from python_pdf_extraction import extract_text_with_docling, extract_images_to_folder, extract_tables_with_docling
 from webscraper import WebScraper
@@ -244,24 +246,63 @@ def pdf_to_md_enterprise(file: Path, job_name: uuid):
     }
 
     markdown_path = llama_parse_pdf(str(file), job_name)
+    images_local_folder = output / "extracted_images"
+    tables_local_folder = output / "extracted_tables"
 
     # Step 1: Upload input PDF to S3
     input_pdf_s3_key = f'{s3_pdf_input_prefix}/{job_name}.pdf'
     upload_file_to_s3(str(file), input_pdf_s3_key, bucket_name=s3_bucket)
 
-    # Step 3: Upload images and tables to S3
-    images_local_folder = output / "extracted_images"
-    tables_local_folder = output / "extracted_tables"
-
+    # Step 2: Upload images and tables to S3
     if images_local_folder.exists() and any(images_local_folder.iterdir()):
-        output['images'] = images_local_folder
+        output_data['images'] = images_local_folder
         upload_directory_to_s3(str(images_local_folder), s3_prefix_images, bucket_name=s3_bucket)
 
     if tables_local_folder.exists() and any(tables_local_folder.iterdir()):
-        output['tables'] = tables_local_folder
+        output_data['tables'] = tables_local_folder
         upload_directory_to_s3(str(tables_local_folder), s3_prefix_tables, bucket_name=s3_bucket)
 
-    # Step 4: Upload Markdown to S3
+    # Step 3: Upload Markdown to S3
+    if markdown_path.exists() and not is_file_empty(markdown_path):
+        output_data['markdown'] = markdown_path
+        markdown_s3_key = f'{s3_prefix_text}/{job_name}.md'
+        upload_file_to_s3(str(markdown_path), markdown_s3_key, bucket_name=s3_bucket)
+
+    return output_data
+
+
+def html_to_md_enterprise(url: str, job_name: uuid):
+    s3_prefix_text = 'html/firecrawl/extracted-text'
+    s3_prefix_images = 'html/firecrawl/extracted-images'
+    s3_prefix_tables = 'html/firecrawl/extracted-tables'
+
+    output_data = {
+        'markdown': None,
+        'images': None,
+        'tables': None
+    }
+
+    html_path = output / f'{job_name}.html'
+    images_local_folder = output / "extracted_images"
+    tables_local_folder = output / "extracted_tables"
+    markdown_path = output / 'markdown' / f'{job_name}.md'
+
+    firecrawl(url, job_name)
+
+    response = requests.get(url)
+    with open(html_path, 'wb') as f:
+        f.write(response.content)
+
+    input_html_s3_key = f'{s3_html_input_prefix}/{job_name}.html'
+    upload_file_to_s3(str(html_path), input_html_s3_key, bucket_name=s3_bucket)
+    if images_local_folder.exists() and any(images_local_folder.iterdir()):
+        output_data['images'] = images_local_folder
+        upload_directory_to_s3(str(images_local_folder), s3_prefix_images, bucket_name=s3_bucket)
+
+    if tables_local_folder.exists() and any(tables_local_folder.iterdir()):
+        output_data['tables'] = tables_local_folder
+        upload_directory_to_s3(str(tables_local_folder), s3_prefix_tables, bucket_name=s3_bucket)
+
     if markdown_path.exists() and not is_file_empty(markdown_path):
         output_data['markdown'] = markdown_path
         markdown_s3_key = f'{s3_prefix_text}/{job_name}.md'

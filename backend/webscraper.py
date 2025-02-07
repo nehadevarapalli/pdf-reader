@@ -6,7 +6,7 @@ import pandas as pd
 import requests
 from bs4 import BeautifulSoup, ResultSet
 
-BUCKET_URL_PREFIX = os.getenv('BUCKET_URL', 'https://neu-pdf-webpage-parser.s3.amazonaws.com/')
+BUCKET_URL_PREFIX = os.getenv('BUCKET_URL', 'https://neu-pdf-webpage-parser.s3.us-east-2.amazonaws.com/')
 NAMESPACES_URL = BUCKET_URL_PREFIX + 'html/html-parser/'
 IMAGES_URL_PREFIX = NAMESPACES_URL+"extracted-images/"
 TABLES_URL_PREFIX = NAMESPACES_URL+"extracted-tables/"
