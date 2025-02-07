@@ -1,9 +1,9 @@
-from datetime import datetime
 import os
+from datetime import datetime
 
-from bs4 import BeautifulSoup, ResultSet
-import requests
 import pandas as pd
+import requests
+from bs4 import BeautifulSoup, ResultSet
 
 
 class WebScraper:
@@ -32,19 +32,19 @@ class WebScraper:
         for image_count, image in enumerate(images):
             image_url = image['src']
             img_data = requests.get(self.url + '/' + image_url).content
-            with open(f'{self.out_path}/image{image_count}.jpg', 'wb') as handler:
+            with open(f'{self.out_path}/images/image{image_count}.jpg', 'wb') as handler:
                 handler.write(img_data)
             new_tag = self.soup.new_tag("p")
-            new_tag.string = f'[Image {image_count}](image{image_count}.jpg)'
+            new_tag.string = f'[Image {image_count}](images/image{image_count}.jpg)'
             image.replace_with(new_tag)
 
     def extract_modify_tables(self, tables: ResultSet):
         for table_count, table in enumerate(tables):
             read_table = pd.read_html(str(table))
             df = read_table[0]
-            df.to_csv(f'{self.out_path}/table{table_count}.csv')
+            df.to_csv(f'{self.out_path}/tables/table{table_count}.csv')
             new_tag = self.soup.new_tag("p")
-            new_tag.string = f'[Table {table_count}](table{table_count}.csv)'
+            new_tag.string = f'[Table {table_count}](tables/table{table_count}.csv)'
             table.replace_with(new_tag)
 
     # def extract_table(self, count, child):

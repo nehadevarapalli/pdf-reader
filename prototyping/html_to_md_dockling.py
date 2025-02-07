@@ -1,13 +1,16 @@
-from webscraper import WebScraper
 from docling.document_converter import DocumentConverter
+from webscraper import WebScraper
 
-doc_converter = DocumentConverter()
-out_path = WebScraper('https://www.crummy.com/software/BeautifulSoup/bs4/doc/', 'bs4docs->MD').extract_all()
 
-conv_result = doc_converter.convert(out_path + '/index.html')
-# conv_result = doc_converter.convert('https://www.crummy.com/software/BeautifulSoup/bs4/doc/')
+def html_to_md(url: str, job_name: str):
+    doc_converter = DocumentConverter()
+    out = WebScraper(url, job_name).extract_all()
+    conv_result = doc_converter.convert(out.get('html'))
 
-# Export to Markdown
-markdown_output = conv_result.document.export_to_markdown()
-with open(f'{out_path}/output.md', 'w') as f:
-    f.write(markdown_output)
+    # Export to Markdown
+    markdown_output = conv_result.document.export_to_markdown()
+
+    markdown_path = f"{out.get('home')}/output.md"
+    with open(markdown_path, 'w') as f:
+        f.write(markdown_output)
+    return markdown_path
