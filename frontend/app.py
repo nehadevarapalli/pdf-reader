@@ -98,7 +98,7 @@ def process_content(endpoint, files=None, json=None, params=None):
                 st.download_button(
                     label="⬇️ Download Markdown",
                     data=response.content,
-                    file_name=f"{uploaded_file.name}.md",
+                    file_name=filename,
                     mime="text/markdown"
                 )
         else:
