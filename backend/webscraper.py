@@ -6,7 +6,7 @@ import pandas as pd
 import requests
 from bs4 import BeautifulSoup, ResultSet
 
-BUCKET_URL_PREFIX = os.getenv('BUCKET_URL', 'https://neu-pdf-webpage-parser.s3.amazonaws.com/')
+BUCKET_URL_PREFIX = os.getenv('BUCKET_URL', 'https://neu-pdf-webpage-parser.s3.us-east-2.amazonaws.com/')
 NAMESPACES_URL = BUCKET_URL_PREFIX + 'html/html-parser/'
 IMAGES_URL_PREFIX = NAMESPACES_URL+"extracted-images/"
 TABLES_URL_PREFIX = NAMESPACES_URL+"extracted-tables/"
@@ -54,7 +54,9 @@ class WebScraper:
     def extract_modify_images(self, images):
         for image_count, image in enumerate(images):
             image_url = image['src']
-            img_data = requests.get(self.url + '/' + image_url).content
+            if not image_url.startswith('http'): # if src is relative path
+                image_url = self.url + '/' + image_url
+            img_data = requests.get(image_url).content
             file_path = self.IMG_HOME / f'{self.job_name}-img{image_count}.jpg'
             self.file_outputs['image_count'] += 1
             with open(file_path, 'wb') as handler:
@@ -74,4 +76,4 @@ class WebScraper:
 
 
 if __name__ == '__main__':
-    modified_html = WebScraper('https://ds4sd.github.io/docling/', 'bs4docs').extract_all()
+    modified_html = WebScraper('https://www.crummy.com/software/BeautifulSoup/bs4/doc/', 'bs4docs').extract_all()

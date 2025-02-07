@@ -1,3 +1,4 @@
+import asyncio
 import base64
 import csv
 import logging
@@ -5,17 +6,25 @@ import os
 from pathlib import Path
 
 import fitz
+from dotenv import load_dotenv
 from llama_parse import LlamaParse
 import nest_asyncio
 
 nest_asyncio.apply()
-output_folder = Path("./temp_processing/output/pdf")
+output_folder = Path("./temp_processing/output")
+images_folder = output_folder / 'extracted_images'
+tables_folder = output_folder / 'extracted_tables'
+markdown_folder = output_folder / 'markdown'
+
+load_dotenv()
+BUCKET_URL_PREFIX = os.getenv('BUCKET_URL', 'https://neu-pdf-webpage-parser.s3.us-east-2.amazonaws.com/')
+NAMESPACES_URL = BUCKET_URL_PREFIX + 'pdfs/llama-parser/'
+IMAGES_URL_PREFIX = NAMESPACES_URL+"extracted-images/"
+TABLES_URL_PREFIX = NAMESPACES_URL+"extracted-tables/"
 
 
 def llama_parse_pdf(pdf_path: str, job_name: str):
     logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
-    # load_dotenv() # already loaded in api.py
-    # Get API key from environment variables
     LLAMA_API_KEY = os.getenv('LLAMAPARSE_API_KEY')
 
     # Validate environment variables
@@ -37,9 +46,7 @@ def llama_parse_pdf(pdf_path: str, job_name: str):
         raise
 
     # Creating output directories
-    images_folder = output_folder / 'extracted_images'
-    tables_folder = output_folder / 'extracted_tables'
-    markdown_folder = output_folder / 'markdown'
+
     os.makedirs(images_folder, exist_ok=True)
     os.makedirs(tables_folder, exist_ok=True)
     os.makedirs(markdown_folder, exist_ok=True)
@@ -52,8 +59,7 @@ def llama_parse_pdf(pdf_path: str, job_name: str):
     images_extracted = False
 
     for doc_index, doc in enumerate(parsed_docs):
-        markdown_output.append(f"# Document: {doc.metadata.get('file_name', f'Unnamed_{doc_index}')}\n\n")
-        markdown_output.append(f"{doc.text}\n\n")
+        markdown_output.append(f"{doc.text}")
 
         if hasattr(doc, 'tables') and doc.tables:
             tables_extracted = True
@@ -87,7 +93,8 @@ def llama_parse_pdf(pdf_path: str, job_name: str):
                         img_file.write(decoded_image)
 
                     # Add image reference to markdown
-                    markdown_output.append(f"![Image {img_index + 1}]({img_path})\n\n")
+                    aws_img_path = IMAGES_URL_PREFIX + img_filename
+                    markdown_output.append(f"![Image {img_index + 1}]({aws_img_path})\n\n")
                     logging.info(f"Saved LlamaParse image: {img_path}")
 
                 except Exception as e:
@@ -107,7 +114,7 @@ def llama_parse_pdf(pdf_path: str, job_name: str):
                     img_bytes = base_image["image"]
 
                     # Save extracted image
-                    img_filename = f"{job_name}-{page_number + 1}-img{img_index + 1}.png"
+                    img_filename = f"{job_name}-img{image_count}.png"
                     img_path = images_folder / img_filename
 
                     with open(img_path, "wb") as img_file:
@@ -125,9 +132,9 @@ def llama_parse_pdf(pdf_path: str, job_name: str):
                 logging.warning("No images found using PyMuPDF either.")
             else:
                 markdown_output.append(f"## Extracted Images\n")
-                for i in range(1, new_image_count + 1):
-                    img_path = images_folder / f"img-{i}.png"
-                    markdown_output.append(f"![Image {i}]({img_path})\n\n")
+                for i in range(0, new_image_count):
+                    aws_img_path = IMAGES_URL_PREFIX + f"{job_name}-img{i}.png"
+                    markdown_output.append(f"![Image {i}]({aws_img_path})\n\n")
 
         except Exception as e:
             logging.error(f"Error extracting images with PyMuPDF: {e}")
