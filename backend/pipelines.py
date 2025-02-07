@@ -112,34 +112,80 @@ def html_to_md_markitdown(url: str, job_name: uuid):
     return output_data
 
 
-def standardize_docling(file: Path, job_name: uuid):
-    s3_prefix_text = 'pdfs/docling/extracted-text'
+def standardize_docling(input: str, job_name: uuid):
+    if input.startswith("http://") or input.startswith("https://"):
+        s3_prefix_text = 'html/docling/extracted-text'
+        try:
+            html_data = WebScraper(input, job_name).get_webpage()
+            file = output / 'html' / f'{job_name}.html'
+            os.makedirs(output / 'html', exist_ok=True)
+            with open(file, 'w') as f:
+                f.write(html_data)
+            html_cloud_path = f'{s3_html_input_prefix}/{job_name}.html'
+            upload_file_to_s3(str(file), html_cloud_path, bucket_name=s3_bucket)
+        except Exception as e:
+            print(e)
+            return -1
+    else:
+        file = Path(input)
+        if file.suffix != '.pdf':
+            raise ValueError("Input file must be a PDF")
+        s3_prefix_text = 'pdfs/docling/extracted-text'
+        pdf_cloud_path = f'{s3_pdf_input_prefix}/{job_name}.pdf'
+        upload_file_to_s3(str(file), pdf_cloud_path, bucket_name=s3_bucket)
+
     doc_converter = DocumentConverter()
-    conv_result = doc_converter.convert(file)
+    conv_result = doc_converter.convert(str(file))
     markdown_output = conv_result.document.export_to_markdown()
+
     markdown_dir = output / 'markdown'
     os.makedirs(markdown_dir, exist_ok=True)
     markdown_path = markdown_dir / f'{job_name}.md'
     with open(markdown_path, 'w') as f:
         f.write(markdown_output)
+
     # Upload MD to S3
     markdown_s3_key = f'{s3_prefix_text}/{job_name}.md'
     upload_file_to_s3(str(markdown_path), markdown_s3_key, bucket_name=s3_bucket)
+
     return markdown_path
 
 
-def standardize_markitdown(file: Path, job_name: uuid):
-    s3_prefix_text = 'pdfs/markitdown/extracted-text'
+def standardize_markitdown(input: str, job_name: uuid):
+    if input.startswith("http://") or input.startswith("https://"):
+        s3_prefix_text = 'html/markitdown/extracted-text'
+        try:
+            html_data = WebScraper(input, job_name).get_webpage()
+            file = output / 'html' / f'{job_name}.html'
+            os.makedirs(output / 'html', exist_ok=True)
+            with open(file, 'w') as f:
+                f.write(html_data)
+            html_cloud_path = f'{s3_html_input_prefix}/{job_name}.html'
+            upload_file_to_s3(str(file), html_cloud_path, bucket_name=s3_bucket)
+        except Exception as e:
+            print(e)
+            return -1
+    else:
+        file = Path(input)
+        if file.suffix != '.pdf':
+            raise ValueError("Input file must be a PDF")
+        s3_prefix_text = 'pdfs/markitdown/extracted-text'
+        pdf_cloud_path = f'{s3_pdf_input_prefix}/{job_name}.pdf'
+        upload_file_to_s3(str(file), pdf_cloud_path, bucket_name=s3_bucket)
+        
     md = MarkItDown()
     conv_result = md.convert(str(file))
+
     markdown_dir = output / 'markdown'
     os.makedirs(markdown_dir, exist_ok=True)
     markdown_path = markdown_dir / f'{job_name}.md'
     with open(markdown_path, 'w') as f:
         f.write(conv_result.text_content)
+
     # Upload MD to S3
     markdown_s3_key = f'{s3_prefix_text}/{job_name}.md'
     upload_file_to_s3(str(markdown_path), markdown_s3_key, bucket_name=s3_bucket)
+
     return markdown_path
 
 
