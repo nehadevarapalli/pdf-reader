@@ -82,7 +82,8 @@ Replace `<your_aws_access_key>` and other placeholders with your actual credenti
 - **FastAPI Backend**: [https://nehadevarapalli-parseforge.hf.space/](https://nehadevarapalli-parseforge.hf.space/)  
 - **Streamlit Frontend**: [https://parse-forge.streamlit.app](https://parse-forge.streamlit.app)  
 - **GitHub Project**: [https://github.com/users/nehadevarapalli/projects/2](https://github.com/users/nehadevarapalli/projects/2)  
-- **Codelabs Documentation**: [https://codelabs-preview.appspot.com/?file_id=1SZHxAEETpt6-INannVHcy-WhCiZ-rmFsuChKF19sKO8#0](https://codelabs-preview.appspot.com/?file_id=1SZHxAEETpt6-INannVHcy-WhCiZ-rmFsuChKF19sKO8#0)  
+- **Codelabs Documentation**: [https://codelabs-preview.appspot.com/?file_id=1SZHxAEETpt6-INannVHcy-WhCiZ-rmFsuChKF19sKO8#0](https://codelabs-preview.appspot.com/?file_id=1SZHxAEETpt6-INannVHcy-WhCiZ-rmFsuChKF19sKO8#0)
+- **Demo Video**: [Youtube](https://www.youtube.com/watch?v=nrw8KiRCwU4)
 
 ---
 
